@@ -1,26 +1,41 @@
 import type { APIRoute } from 'astro';
 
-async function findChromePath(): Promise<string | undefined> {
+const IS_VERCEL = !!process.env.VERCEL;
+
+async function launchBrowser() {
+  if (IS_VERCEL) {
+    const chromium = (await import('@sparticuz/chromium')).default;
+    const puppeteer = await import('puppeteer-core');
+    return puppeteer.default.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    });
+  }
+
+  const puppeteer = await import('puppeteer');
+  const executablePath = await findLocalChrome();
+  return puppeteer.default.launch({
+    headless: true,
+    executablePath,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
+  });
+}
+
+async function findLocalChrome(): Promise<string | undefined> {
   const { access } = await import('node:fs/promises');
   const { homedir } = await import('node:os');
   const { join } = await import('node:path');
-  const { execSync } = await import('node:child_process');
 
   const candidates = [
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     join(homedir(), '.cache/puppeteer/chrome/mac_arm-145.0.7632.77/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'),
   ];
 
-  try {
-    const raw = execSync('npx puppeteer browsers list 2>/dev/null', { encoding: 'utf-8', timeout: 5000 });
-    const match = raw.match(/chrome@\S+ \(mac_arm\) (.+)/);
-    if (match?.[1]) candidates.unshift(match[1].trim());
-  } catch { /* ignore */ }
-
   for (const p of candidates) {
     try {
       await access(p);
-      console.log('[report-pdf] Using Chrome at:', p);
       return p;
     } catch { /* try next */ }
   }
@@ -29,15 +44,7 @@ async function findChromePath(): Promise<string | undefined> {
 
 export const GET: APIRoute = async ({ request }) => {
   try {
-    const puppeteer = await import('puppeteer');
-
-    const executablePath = await findChromePath();
-
-    const browser = await puppeteer.default.launch({
-      headless: true,
-      executablePath,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
-    });
+    const browser = await launchBrowser();
     const page = await browser.newPage();
 
     const cookies = request.headers.get('cookie') ?? '';
