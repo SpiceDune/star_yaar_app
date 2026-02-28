@@ -1,0 +1,22 @@
+---
+interface Props {
+  house: number;
+}
+const { house } = Astro.props;
+const kendra = [1, 4, 7, 10].includes(house);
+const trikona = [1, 5, 9].includes(house);
+const trik = [6, 8, 12].includes(house);
+---
+<span class="inline-flex items-center gap-1">
+  {kendra && (
+    <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">K</span>
+  )}
+  {trikona && (
+    <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">T</span>
+  )}
+  {trik && (
+    <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-50 text-red-700">D</span>
+  )}
+  {!kendra && !trikona && !trik && <span class="text-[10px] text-stone-500">{house}</span>}
+  {(kendra || trikona || trik) && <span class="text-[10px] text-stone-500">H{house}</span>}
+</span>

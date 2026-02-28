@@ -1,0 +1,12 @@
+---
+// Wrapper: table on desktop (md+), stacked cards on mobile.
+// Consumers pass both <Fragment slot="table"> and <Fragment slot="cards">.
+---
+<div class="w-full">
+  <div class="hidden md:block scroll-hint overflow-x-auto">
+    <slot name="table" />
+  </div>
+  <div class="md:hidden space-y-2">
+    <slot name="cards" />
+  </div>
+</div>

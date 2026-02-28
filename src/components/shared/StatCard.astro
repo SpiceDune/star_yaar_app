@@ -1,0 +1,15 @@
+---
+interface Props {
+  label: string;
+  value: string;
+  sublabel?: string;
+}
+const { label, value, sublabel } = Astro.props;
+---
+<div class="space-y-0.5">
+  <p class="text-[10px] md:text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+    {label}
+  </p>
+  <p class="text-sm md:text-base font-semibold text-stone-800">{value}</p>
+  {sublabel && <p class="text-[11px] text-stone-500">{sublabel}</p>}
+</div>

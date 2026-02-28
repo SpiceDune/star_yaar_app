@@ -1,0 +1,24 @@
+---
+import type { GrahaId } from '../../lib/types';
+import { PLANET_COLORS, GRAHA_NAMES } from '../../lib/constants';
+
+interface Props {
+  graha: GrahaId;
+  showDegree?: boolean;
+  degree?: number;
+  retrograde?: boolean;
+}
+const { graha, showDegree = false, degree = 0, retrograde = false } = Astro.props;
+const planetColor = PLANET_COLORS[graha];
+const grahaName = GRAHA_NAMES[graha];
+// 10% opacity background in hex (append 1a to 6-char hex)
+const bgColor = `${planetColor}1a`;
+---
+<span
+  class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+  style={`background: ${bgColor}; color: ${planetColor}`}
+>
+  {grahaName}
+  {showDegree && degree != null && <span class="font-mono text-[10px] opacity-70">{degree}°</span>}
+  {retrograde && <span class="text-[9px] opacity-60">℞</span>}
+</span>

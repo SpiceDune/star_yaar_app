@@ -1,0 +1,14 @@
+---
+interface Props {
+  delay?: 1 | 2 | 3 | 4 | 5 | 6;
+}
+const { delay } = Astro.props;
+---
+<section class={`animate-section${delay != null ? ` delay-${delay}` : ''}`}>
+  <div class="flex items-center gap-3 mb-4 md:mb-5">
+    <div class="w-1 h-6 md:h-7 rounded-full bg-orange-600 flex-shrink-0"></div>
+    <h2 class="font-display text-xl md:text-2xl text-stone-800 leading-tight">
+      <slot />
+    </h2>
+  </div>
+</section>

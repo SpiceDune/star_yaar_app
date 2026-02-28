@@ -1,0 +1,19 @@
+---
+import StatCard from '../shared/StatCard.astro';
+import type { Panchang } from '../../lib/types';
+
+interface Props {
+  panchang: Panchang;
+}
+const { panchang } = Astro.props;
+---
+<div class="bg-stone-50 rounded-xl border border-stone-200 p-3 md:p-4">
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+    <StatCard label="Lagna" value={panchang.lagna} sublabel={panchang.lagnaEnglish} />
+    <StatCard label="Tithi" value={panchang.tithi} />
+    <StatCard label="Nakshatra" value={panchang.nakshatra} sublabel={panchang.nakshatraPada} />
+    <StatCard label="Yoga" value={panchang.yoga} />
+    <StatCard label="Karana" value={panchang.karana} />
+    <StatCard label="Vara" value={panchang.vara} sublabel={panchang.varaEnglish} />
+  </div>
+</div>
