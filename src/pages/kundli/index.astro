@@ -10,6 +10,9 @@ import { mockChartD1, mockPanchang, mockDasha } from '../../lib/mock-data';
 import { RASHI_ENGLISH, GRAHA_ICON_SVG, planetIconSvg } from '../../lib/constants';
 import { computeYogas, YOGA_CATEGORY_LABELS } from '../../lib/yoga-engine';
 import type { YogaCategory } from '../../lib/yoga-engine';
+import { computeTransits } from '../../lib/compute-transits';
+import TransitSection from '../../components/report/TransitSection';
+import { computeAllVargaCharts, VARGA_DEFS } from '../../lib/divisional-charts';
 import type { ChartData, Panchang as PanchangType, GrahaId, RashiId } from '../../lib/types';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -232,12 +235,35 @@ const yogaCatDesc: Record<string, string> = {
   dosha: 'Challenging planetary placements that may require awareness and remedies',
 };
 
+// Compute Transits
+const transitResult = await computeTransits(chartData);
+
+// Compute Divisional Charts
+const vargaCharts = computeAllVargaCharts(chartData);
+
+// Convert VargaChartResult → ChartData for the NorthIndianChart component
+import type { VargaChartResult } from '../../lib/divisional-charts';
+const RASHI_ORDER_FULL: RashiId[] = ['Mesha','Vrishabha','Mithuna','Karka','Simha','Kanya','Tula','Vrishchika','Dhanu','Makara','Kumbha','Meena'];
+function vargaToChartData(vc: VargaChartResult): ChartData {
+  const lagnaIdx = RASHI_ORDER_FULL.indexOf(vc.lagna);
+  const houses: ChartData['houses'] = {} as ChartData['houses'];
+  for (let i = 1; i <= 12; i++) {
+    const rashiIdx = (lagnaIdx + i - 1) % 12;
+    houses[i] = { rashi: RASHI_ORDER_FULL[rashiIdx], planets: [] };
+  }
+  for (const p of vc.planets) {
+    if (houses[p.house]) {
+      houses[p.house].planets.push({ graha: p.graha, degree: p.degree, retrograde: p.retrograde });
+    }
+  }
+  return { lagna: vc.lagna, houses, chartName: vc.def.id, chartType: vc.def.name };
+}
+
 const reportTabs = [
   { id: 'planets', label: 'Planets' },
   { id: 'dasha', label: 'Dasha Timeline' },
   { id: 'yogas', label: 'Yogas' },
   { id: 'transits', label: 'Transits' },
-  { id: 'd9', label: 'D9 Navamsa' },
   { id: 'divisional', label: 'Divisional Charts' },
 ];
 ---
@@ -507,39 +533,112 @@ const reportTabs = [
     )}
   </section>
 
-  <!-- 4. Transits -->
+  <!-- 4. Transits (Gochar) -->
   <section id="transits" class="pt-8 scroll-mt-16">
-    <h2 class="text-lg font-bold text-slate-800 tracking-tight mb-4">Transits <span class="text-slate-500 font-normal text-xs">(Gochar)</span></h2>
-    <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-6 md:p-8 text-center">
-      <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
-        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-      </div>
-      <p class="text-sm font-bold text-slate-700 mb-1">Coming Soon</p>
-      <p class="text-xs font-medium text-slate-500 max-w-sm mx-auto">Current planetary transits over your natal chart — see how today's sky affects your houses and dashas.</p>
-    </div>
+    <h2 class="text-lg font-bold text-slate-800 tracking-tight mb-1">Transits <span class="text-slate-500 font-normal text-sm">(Gochar)</span></h2>
+    <p class="text-sm text-slate-600 mb-5">Where planets are on any date and how they affect your natal houses</p>
+
+    <TransitSection
+      client:visible
+      initialTransit={transitResult}
+      natalLagna={chartData.lagna}
+    />
   </section>
 
-  <!-- 5. D9 Navamsa -->
-  <section id="d9" class="pt-8 scroll-mt-16">
-    <h2 class="text-lg font-bold text-slate-800 tracking-tight mb-4">D9 Navamsa <span class="text-slate-500 font-normal text-xs">(Marriage & Dharma)</span></h2>
-    <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-6 md:p-8 text-center">
-      <div class="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-3">
-        <svg class="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
-      </div>
-      <p class="text-sm font-bold text-slate-700 mb-1">Coming Soon</p>
-      <p class="text-xs font-medium text-slate-500 max-w-sm mx-auto">The Navamsa chart reveals the deeper strength of planets and is key for marriage, spiritual life, and inner nature.</p>
-    </div>
-  </section>
-
-  <!-- 6. Divisional Charts -->
+  <!-- 5. Divisional Charts (Varga) -->
   <section id="divisional" class="pt-8 pb-4 scroll-mt-16">
-    <h2 class="text-lg font-bold text-slate-800 tracking-tight mb-4">Divisional Charts <span class="text-slate-500 font-normal text-xs">(D2–D10)</span></h2>
-    <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-6 md:p-8 text-center">
-      <div class="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center mx-auto mb-3">
-        <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>
+    <h2 class="text-lg font-bold text-slate-800 tracking-tight mb-1">Divisional Charts <span class="text-slate-500 font-normal text-sm">(Varga)</span></h2>
+    <p class="text-sm text-slate-600 mb-4">Each chart zooms into a specific life area by subdividing the zodiac — {vargaCharts.length} charts computed</p>
+
+    <!-- Sticky pills for divisional chart navigation -->
+    <div class="sticky top-12 z-20 -mx-4 md:-mx-6 px-4 md:px-6 py-2.5 bg-white/90 backdrop-blur-lg border-b border-slate-200/60 mb-5">
+      <div class="flex flex-wrap gap-1.5">
+        {vargaCharts.map(vc => {
+          const isD9 = vc.def.division === 9;
+          const shortPurpose = vc.def.purpose.split('&')[0].split(',')[0].trim();
+          return (
+            <a href={`#varga-${vc.def.id}`}
+              class={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${isD9 ? 'bg-blue-100 text-blue-700 hover:bg-blue-700 hover:text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white'}`}>
+              {vc.def.id} <span class="font-medium ml-0.5">{shortPurpose}</span>
+            </a>
+          );
+        })}
       </div>
-      <p class="text-sm font-bold text-slate-700 mb-1">Coming Soon</p>
-      <p class="text-xs font-medium text-slate-500 max-w-sm mx-auto">Hora (D2 – wealth), Drekkana (D3 – siblings), Chaturthamsa (D4 – property), Dashamsa (D10 – career), and more.</p>
+    </div>
+
+    <div class="space-y-4">
+      {vargaCharts.map(vc => {
+        const isD9 = vc.def.division === 9;
+        const vcChartData = vargaToChartData(vc);
+        return (
+        <details id={`varga-${vc.def.id}`} class={`rounded-xl border overflow-hidden scroll-mt-28 group ${isD9 ? 'border-blue-200/80' : 'border-slate-200/80'}`}>
+          <summary class={`px-5 py-5 cursor-pointer select-none list-none flex items-start gap-3 ${isD9 ? 'bg-blue-50/40' : 'bg-white'}`}>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <span class={`text-sm font-bold px-2.5 py-1 rounded-lg ${isD9 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>{vc.def.id}</span>
+                <span class={`text-lg font-bold tracking-tight ${isD9 ? 'text-blue-800' : 'text-slate-900'}`}>{vc.def.purpose}</span>
+              </div>
+              <p class="text-sm text-slate-500 mt-1">{vc.def.name} {vc.def.sanskrit} · Lagna {RASHI_ENGLISH[vc.lagna] ?? vc.lagna}</p>
+              <p class="text-[15px] text-slate-600 mt-2 leading-relaxed">{vc.def.description}</p>
+            </div>
+            <svg class="w-5 h-5 text-slate-400 shrink-0 mt-1.5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+          </summary>
+
+          <div class="border-t border-slate-100 bg-white">
+            <!-- Diamond chart -->
+            <div class="px-5 py-4">
+              <div class="mx-auto max-w-md">
+                <NorthIndianChart client:visible chartData={vcChartData} showEnglishSigns={true} />
+              </div>
+            </div>
+
+            <!-- Planet positions -->
+            <div class="px-5 pb-5">
+              <!-- Desktop table -->
+              <div class="hidden md:block rounded-xl border border-slate-200/80 overflow-hidden">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200/80">
+                      <th class="text-left px-5 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Planet</th>
+                      <th class="text-left px-5 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Sign</th>
+                      <th class="text-center px-5 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Degree</th>
+                      <th class="text-center px-5 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">House</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vc.planets.sort((a, b) => PLANET_ORDER.indexOf(a.graha) - PLANET_ORDER.indexOf(b.graha)).map((p, i) => (
+                      <tr class={i < vc.planets.length - 1 ? 'border-b border-slate-100' : ''}>
+                        <td class="px-5 py-2.5">
+                          <span class="font-bold inline-flex items-center gap-1.5" style={`color:${DASHA_COLORS[p.graha] ?? '#334155'}`}>
+                            <span set:html={planetIconSvg(p.graha, 16)} />{p.graha}
+                            {p.retrograde && <span class="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">R</span>}
+                          </span>
+                        </td>
+                        <td class="px-5 py-2.5 font-semibold text-slate-700">{RASHI_ENGLISH[p.rashi] ?? p.rashi}</td>
+                        <td class="px-5 py-2.5 text-center font-mono font-semibold text-slate-700">{String(p.degree).padStart(2, '0')}°</td>
+                        <td class="px-5 py-2.5 text-center font-bold text-slate-600">{p.house}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <!-- Mobile grid -->
+              <div class="md:hidden grid grid-cols-3 gap-2">
+                {vc.planets.sort((a, b) => PLANET_ORDER.indexOf(a.graha) - PLANET_ORDER.indexOf(b.graha)).map(p => (
+                  <div class="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5 text-center">
+                    <p class="text-xs font-bold inline-flex items-center justify-center gap-1" style={`color:${DASHA_COLORS[p.graha] ?? '#334155'}`}>
+                      <span set:html={planetIconSvg(p.graha, 13)} />{p.graha}{p.retrograde ? <span class="text-red-500 ml-0.5">R</span> : ''}
+                    </p>
+                    <p class="text-xs text-slate-600 font-semibold mt-0.5">{RASHI_ENGLISH[p.rashi] ?? p.rashi}</p>
+                    <p class="text-[11px] text-slate-500 font-medium">H{p.house} · {p.degree}°</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </details>
+        );
+      })}
     </div>
   </section>
 </ReportLayout>
