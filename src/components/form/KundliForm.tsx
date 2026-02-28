@@ -33,6 +33,10 @@ export default function KundliForm({
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [cityLoading, setCityLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [manualCoords, setManualCoords] = useState(false);
+  const [manualLat, setManualLat] = useState('');
+  const [manualLon, setManualLon] = useState('');
+  const [manualTz, setManualTz] = useState('Asia/Kolkata');
   const cityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cityDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -108,32 +112,73 @@ export default function KundliForm({
   }, []);
 
   const cityValue = city.trim() || cityQuery.trim();
-  const isValid = name.trim() && dob && (timeKnown ? time : true) && cityValue;
+  const hasLocation = manualCoords
+    ? (manualLat.trim() !== '' && manualLon.trim() !== '' && !isNaN(Number(manualLat)) && !isNaN(Number(manualLon)))
+    : !!cityValue;
+  const isValid = name.trim() && dob && (timeKnown ? time : true) && hasLocation;
+
+  const [submitError, setSubmitError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid || loading) return;
     setLoading(true);
+    setSubmitError('');
     try {
       setCookie('name', name.trim());
       setCookie('dob', dob);
       if (timeKnown && time) setCookie('time', time);
       else setCookie('time', '');
       setCookie('city', cityValue);
-      const selectedOpt = cityOptions.find((o) => o.label === cityValue || o.name === cityValue);
-      if (selectedOpt?.latitude != null && selectedOpt?.longitude != null) {
-        setCookie('lat', String(selectedOpt.latitude));
-        setCookie('lon', String(selectedOpt.longitude));
-        if (selectedOpt.timezone) setCookie('tz', selectedOpt.timezone);
+
+      let lat: number | undefined;
+      let lon: number | undefined;
+      let tz: string | undefined;
+
+      if (manualCoords) {
+        lat = Number(manualLat);
+        lon = Number(manualLon);
+        tz = manualTz || undefined;
+      } else {
+        const selectedOpt = cityOptions.find((o) => o.label === cityValue || o.name === cityValue);
+        lat = selectedOpt?.latitude;
+        lon = selectedOpt?.longitude;
+        tz = selectedOpt?.timezone;
       }
-      const params = new URLSearchParams({
-        name: name.trim(),
-        dob,
-        ...(timeKnown && time && { time }),
-        city: cityValue,
+
+      if (lat != null && lon != null) {
+        setCookie('lat', String(lat));
+        setCookie('lon', String(lon));
+        if (tz) setCookie('tz', tz);
+      }
+
+      const res = await fetch('/api/kundli', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          dob,
+          time: timeKnown && time ? time : undefined,
+          city: cityValue || undefined,
+          lat: lat ?? undefined,
+          lon: lon ?? undefined,
+          timezone: tz ?? undefined,
+        }),
       });
-      window.location.href = `/kundli?${params.toString()}`;
-    } catch {
+
+      if (res.ok) {
+        const { id } = await res.json();
+        window.location.href = `/kundli/${id}`;
+        return;
+      }
+
+      const errorData = await res.json().catch(() => null);
+      const msg = errorData?.error || 'Failed to generate your Kundli. Please try again.';
+      setSubmitError(msg);
+      setLoading(false);
+    } catch (err) {
+      console.error('[KundliForm] submit error:', err);
+      setSubmitError('Something went wrong. Please try again.');
       setLoading(false);
     }
   };
@@ -195,54 +240,115 @@ export default function KundliForm({
           </label>
         </div>
 
-        <div className="space-y-1.5" ref={cityDropdownRef}>
-          <Label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">
-            Birth City
-          </Label>
-          <div className="relative">
-            <Input
-              placeholder="Start typing city name..."
-              value={cityQuery || city}
-              onChange={(e) => {
-                setCityQuery(e.target.value);
-                if (!e.target.value) setCity('');
-              }}
-              onFocus={() => cityOptions.length > 0 && setCityDropdownOpen(true)}
-              className="h-12 rounded-lg text-base border-stone-200 focus:border-stone-500 focus:ring-stone-500/20"
-              autoComplete="off"
-            />
-            {cityLoading && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400">
-                <Loader2 className="w-4 h-4 animate-spin" />
-              </span>
-            )}
-            {cityDropdownOpen && cityOptions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-auto rounded-xl border border-stone-200 bg-white shadow-lg">
-                {cityOptions.map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    className="w-full text-left px-4 py-3 text-sm hover:bg-stone-50 border-b border-stone-50 last:border-0 transition-colors"
-                    onClick={() => {
-                      setCity(opt.label);
-                      setCityQuery(opt.label);
-                      setCityOptions([]);
-                      setCityDropdownOpen(false);
-                    }}
-                  >
-                    <span className="font-medium text-stone-800">{opt.name}</span>
-                    {(opt.state || opt.country) && (
-                      <span className="text-stone-500 ml-1">
-                        {[opt.state, opt.country].filter(Boolean).join(', ')}
-                      </span>
-                    )}
-                  </button>
-                ))}
+        <div className={cn('space-y-1.5', manualCoords && 'md:col-span-2')} ref={cityDropdownRef}>
+          {!manualCoords ? (
+            <>
+              <Label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">
+                Birth City
+              </Label>
+              <div className="relative">
+                <Input
+                  placeholder="Start typing city name..."
+                  value={cityQuery || city}
+                  onChange={(e) => {
+                    setCityQuery(e.target.value);
+                    if (!e.target.value) setCity('');
+                  }}
+                  onFocus={() => cityOptions.length > 0 && setCityDropdownOpen(true)}
+                  className="h-12 rounded-lg text-base border-stone-200 focus:border-stone-500 focus:ring-stone-500/20"
+                  autoComplete="off"
+                />
+                {cityLoading && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  </span>
+                )}
+                {cityDropdownOpen && cityOptions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-auto rounded-xl border border-stone-200 bg-white shadow-lg">
+                    {cityOptions.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        className="w-full text-left px-4 py-3 text-sm hover:bg-stone-50 border-b border-stone-50 last:border-0 transition-colors"
+                        onClick={() => {
+                          setCity(opt.label);
+                          setCityQuery(opt.label);
+                          setCityOptions([]);
+                          setCityDropdownOpen(false);
+                        }}
+                      >
+                        <span className="font-medium text-stone-800">{opt.name}</span>
+                        {(opt.state || opt.country) && (
+                          <span className="text-stone-500 ml-1">
+                            {[opt.state, opt.country].filter(Boolean).join(', ')}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+              <button
+                type="button"
+                onClick={() => setManualCoords(true)}
+                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium mt-1 transition-colors"
+              >
+                Can't find your city? Enter coordinates manually
+              </button>
+            </>
+          ) : (
+            <>
+              <Label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">
+                Birth Location (Coordinates)
+              </Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <Input
+                    type="number"
+                    step="any"
+                    placeholder="Latitude (e.g. 27.18)"
+                    value={manualLat}
+                    onChange={(e) => setManualLat(e.target.value)}
+                    className="h-12 rounded-lg text-base border-stone-200 focus:border-stone-500 focus:ring-stone-500/20"
+                  />
+                  <span className="text-[10px] text-stone-400 mt-0.5 block">-90 to 90</span>
+                </div>
+                <div>
+                  <Input
+                    type="number"
+                    step="any"
+                    placeholder="Longitude (e.g. 78.02)"
+                    value={manualLon}
+                    onChange={(e) => setManualLon(e.target.value)}
+                    className="h-12 rounded-lg text-base border-stone-200 focus:border-stone-500 focus:ring-stone-500/20"
+                  />
+                  <span className="text-[10px] text-stone-400 mt-0.5 block">-180 to 180</span>
+                </div>
+                <div>
+                  <Input
+                    placeholder="Timezone"
+                    value={manualTz}
+                    onChange={(e) => setManualTz(e.target.value)}
+                    className="h-12 rounded-lg text-base border-stone-200 focus:border-stone-500 focus:ring-stone-500/20"
+                  />
+                  <span className="text-[10px] text-stone-400 mt-0.5 block">e.g. Asia/Kolkata</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setManualCoords(false)}
+                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium mt-1 transition-colors"
+              >
+                Search by city name instead
+              </button>
+            </>
+          )}
         </div>
       </div>
+
+      {submitError && (
+        <p className="mt-3 text-sm text-red-600 font-medium text-center">{submitError}</p>
+      )}
 
       <Button
         type="submit"
