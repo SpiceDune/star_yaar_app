@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@astrojs/react": "^4.4.2",
+    "@astrojs/vercel": "^9.0.4",
     "@fusionstrings/panchangam": "^0.2.0",
     "@supabase/supabase-js": "^2.98.0",
     "@tailwindcss/vite": "^4.2.1",
