@@ -37,7 +37,11 @@ export const GET: APIRoute = async ({ request }) => {
       await page.setCookie(...puppeteerCookies);
     }
 
-    await page.goto(`${origin}/kundli/report`, {
+    const sections = new URL(request.url).searchParams.get('sections') ?? '';
+    const reportUrl = new URL(`${origin}/kundli/report`);
+    if (sections) reportUrl.searchParams.set('sections', sections);
+
+    await page.goto(reportUrl.toString(), {
       waitUntil: 'networkidle0',
       timeout: 30000,
     });

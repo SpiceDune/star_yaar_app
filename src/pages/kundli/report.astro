@@ -246,11 +246,25 @@ function d9Houses(): ChartData['houses'] | null {
   return h;
 }
 
+function vargaToHouses(vc: typeof vargaCharts[0]): ChartData['houses'] {
+  const lagnaIdx = RASHI_ORDER.indexOf(vc.lagna);
+  const h: ChartData['houses'] = {} as ChartData['houses'];
+  for (let i = 1; i <= 12; i++) { const ri = (lagnaIdx + i - 1) % 12; h[i] = { rashi: RASHI_ORDER[ri], planets: [] }; }
+  for (const p of vc.planets) { if (h[p.house]) h[p.house].planets.push({ graha: p.graha, degree: p.degree, retrograde: p.retrograde }); }
+  return h;
+}
+
 const d1Svg = buildChartSvg(chartData.houses, chartData.lagna);
 const d9H = d9Houses();
 const d9Svg = d9H ? buildChartSvg(d9H, d9!.lagna) : '';
 const transitH = transitHouses();
 const transitSvg = buildChartSvg(transitH, chartData.lagna);
+
+const vargaSvgs = vargaCharts.map(vc => ({
+  vc,
+  svg: buildChartSvg(vargaToHouses(vc), vc.lagna),
+}));
+
 const now = new Date();
 const generatedDate = `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
 
@@ -258,6 +272,12 @@ const DASHA_COLORS: Record<string, string> = {
   Sun: '#ea580c', Moon: '#7c3aed', Mars: '#e11d48', Mercury: '#059669',
   Jupiter: '#d97706', Venus: '#ec4899', Saturn: '#475569', Rahu: '#2563eb', Ketu: '#6366f1',
 };
+
+const sectionsParam = Astro.url.searchParams.get('sections') ?? '';
+const activeSections = sectionsParam ? new Set(sectionsParam.split(',')) : new Set(['basic', 'yogas', 'dasha', 'divisional']);
+const showYogas = activeSections.has('yogas');
+const showDasha = activeSections.has('dasha');
+const showDivisional = activeSections.has('divisional');
 ---
 
 <html>
@@ -335,6 +355,17 @@ const DASHA_COLORS: Record<string, string> = {
   .yoga-detail { font-size: 11px; color: #475569; line-height: 1.5; margin-top: 3px; }
   .yoga-planets { font-size: 10px; color: #94a3b8; margin-top: 2px; }
 
+  /* ── Varga Charts ── */
+  .varga-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .varga-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; break-inside: avoid; page-break-inside: avoid; }
+  .varga-card-header { display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px; }
+  .varga-card-id { font-size: 11px; font-weight: 800; color: #475569; background: #f1f5f9; padding: 1px 6px; border-radius: 3px; }
+  .varga-card-purpose { font-size: 11px; font-weight: 700; color: #1e293b; }
+  .varga-card-desc { font-size: 9px; color: #64748b; line-height: 1.4; margin-bottom: 4px; }
+  .varga-card svg { max-width: 100%; height: auto; }
+  .varga-planet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px 6px; font-size: 9px; margin-top: 4px; }
+  .varga-planet-item { display: flex; align-items: center; gap: 3px; padding: 1px 0; }
+
   .page-break { page-break-before: always; }
   .footer { text-align: center; font-size: 9px; color: #94a3b8; margin-top: 12px; padding-top: 6px; border-top: 1px solid #e2e8f0; letter-spacing: 0.3px; }
   @media print { .no-print { display: none !important; } }
@@ -376,13 +407,13 @@ const DASHA_COLORS: Record<string, string> = {
   <div class="info-cell"><label>Vara</label><p>{panchangData.vara}</p></div>
 </div>
 
-<div class="section-title">Lagna Chart (D1) &amp; Navamsa Chart (D9)</div>
+<div class="section-title">{showDivisional ? 'Lagna Chart (D1) & Navamsa Chart (D9)' : 'Lagna Chart (D1)'}</div>
 <div class="charts">
   <div class="chart-box">
     <div class="chart-label">Lagna Chart — {chartData.lagna} ({RASHI_ENGLISH[chartData.lagna]})</div>
     <Fragment set:html={d1Svg} />
   </div>
-  {d9Svg && (
+  {showDivisional && d9Svg && (
     <div class="chart-box">
       <div class="chart-label">Navamsa (D9) — {d9!.lagna} ({RASHI_ENGLISH[d9!.lagna]})</div>
       <Fragment set:html={d9Svg} />
@@ -414,7 +445,7 @@ const DASHA_COLORS: Record<string, string> = {
   </div>
 </div>
 
-{transitResult && (
+{showDivisional && transitResult && (
   <div class="page-break">
     <div class="section-title">Transit Chart (Gochar) — {transitResult.date}</div>
     <div class="charts">
@@ -441,64 +472,100 @@ const DASHA_COLORS: Record<string, string> = {
   </div>
 )}
 
-<div class="section-title">Yogas (Planetary Combinations) — {yogaResults.length} Found</div>
-{yogaResults.map(y => {
-  const isDosha = y.category === 'dosha';
-  const catColor = isDosha ? '#e11d48' : y.category === 'mahapurusha' ? '#d97706' : y.category === 'raja' ? '#7c3aed' : y.category === 'dhana' ? '#059669' : '#475569';
-  const strengthLabel = y.strength === 'strong' ? 'Strong' : y.strength === 'moderate' ? 'Moderate' : 'Present';
-  return (
-    <div class="yoga-card">
-      <div class="yoga-header">
-        <span class="yoga-name" style={`color:${isDosha ? '#e11d48' : '#0f172a'}`}>{y.name}</span>
-        <span class="yoga-cat" style={`background:${catColor}`}>{YOGA_CATEGORY_LABELS[y.category]}</span>
-        <span class="yoga-strength">{strengthLabel}</span>
-      </div>
-      <div class="yoga-effect">{y.effect}</div>
-      <div class="yoga-detail">{y.detail}</div>
-      <div class="yoga-planets">{y.description} &middot; {y.planets.join(', ')}{y.houses.length > 0 ? ` · Houses ${y.houses.join(', ')}` : ''}</div>
+{showDivisional && vargaSvgs.length > 0 && (
+  <>
+    <div class="page-break">
+      <div class="section-title">Divisional Charts (Varga) — {vargaSvgs.length} Charts</div>
     </div>
-  );
-})}
-
-<div class="page-break"></div>
-
-<div class="section-title">Vimshottari Maha Dasha</div>
-<table>
-  <thead><tr><th>#</th><th>Maha Dasha</th><th>Duration</th><th>Start</th><th>End</th></tr></thead>
-  <tbody>
-    {mahaTimeline.map((m, i) => (
-      <tr style={m.isCurrent ? 'background:#f1f5f9;font-weight:700' : ''}>
-        <td>{i + 1}</td>
-        <td style={`font-weight:700;color:${DASHA_COLORS[m.planet] ?? '#334155'}`}>{m.planet}{m.isCurrent ? ' ★' : ''}</td>
-        <td>{m.years}y</td>
-        <td>{m.start}</td>
-        <td>{m.end}</td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-
-<div class="section-title">Antardasha &amp; Pratyantardasha</div>
-{mahaTimeline.map(m => (
-  <div style="margin-bottom:8px">
-    <div class="maha-header" style={`border-left-color:${DASHA_COLORS[m.planet] ?? '#475569'}`}>
-      <span style={`color:${DASHA_COLORS[m.planet] ?? '#334155'}`}>{m.planet}</span> Maha Dasha ({m.years}y) &middot; {m.start} — {m.end}
+    <div class="varga-grid">
+      {vargaSvgs.map(({ vc, svg }) => (
+        <div class="varga-card">
+          <div class="varga-card-header">
+            <span class="varga-card-id">{vc.def.id}</span>
+            <span class="varga-card-purpose">{vc.def.purpose}</span>
+          </div>
+          <div class="varga-card-desc">{vc.def.name} {vc.def.sanskrit} · Lagna: {RASHI_ENGLISH[vc.lagna] ?? vc.lagna}</div>
+          <Fragment set:html={svg} />
+          <div class="varga-planet-grid">
+            {vc.planets.sort((a, b) => PLANET_ORDER.indexOf(a.graha) - PLANET_ORDER.indexOf(b.graha)).map(p => (
+              <div class="varga-planet-item">
+                <span style={`font-weight:700;color:${PLANET_COLORS[p.graha]}`}>{p.graha}{p.retrograde ? '®' : ''}</span>
+                <span style="color:#64748b">{RASHI_ENGLISH[p.rashi] ?? p.rashi} {p.degree}°</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
+  </>
+)}
+
+{showYogas && (
+  <>
+    <div class="section-title">Yogas (Planetary Combinations) — {yogaResults.length} Found</div>
+    {yogaResults.map(y => {
+      const isDosha = y.category === 'dosha';
+      const catColor = isDosha ? '#e11d48' : y.category === 'mahapurusha' ? '#d97706' : y.category === 'raja' ? '#7c3aed' : y.category === 'dhana' ? '#059669' : '#475569';
+      const strengthLabel = y.strength === 'strong' ? 'Strong' : y.strength === 'moderate' ? 'Moderate' : 'Present';
+      return (
+        <div class="yoga-card">
+          <div class="yoga-header">
+            <span class="yoga-name" style={`color:${isDosha ? '#e11d48' : '#0f172a'}`}>{y.name}</span>
+            <span class="yoga-cat" style={`background:${catColor}`}>{YOGA_CATEGORY_LABELS[y.category]}</span>
+            <span class="yoga-strength">{strengthLabel}</span>
+          </div>
+          <div class="yoga-effect">{y.effect}</div>
+          <div class="yoga-detail">{y.detail}</div>
+          <div class="yoga-planets">{y.description} &middot; {y.planets.join(', ')}{y.houses.length > 0 ? ` · Houses ${y.houses.join(', ')}` : ''}</div>
+        </div>
+      );
+    })}
+  </>
+)}
+
+{showDasha && <div class="page-break"></div>}
+
+{showDasha && <div class="section-title">Vimshottari Maha Dasha</div>}
+{showDasha && (
+  <>
     <table>
-      <thead><tr><th>Antardasha</th><th>Duration</th><th>Period</th><th>Pratyantardasha</th></tr></thead>
+      <thead><tr><th>#</th><th>Maha Dasha</th><th>Duration</th><th>Start</th><th>End</th></tr></thead>
       <tbody>
-        {m.antars.map(a => (
-          <tr style={a.isCurrent ? 'background:#eff6ff;font-weight:600' : ''}>
-            <td style={`font-weight:600;color:${DASHA_COLORS[a.planet] ?? '#334155'}`}>{m.planet}/{a.planet}</td>
-            <td>{a.duration}</td>
-            <td>{a.start} — {a.end}</td>
-            <td style="font-size:10px;color:#64748b">{a.pratyantars}</td>
+        {mahaTimeline.map((m, i) => (
+          <tr style={m.isCurrent ? 'background:#f1f5f9;font-weight:700' : ''}>
+            <td>{i + 1}</td>
+            <td style={`font-weight:700;color:${DASHA_COLORS[m.planet] ?? '#334155'}`}>{m.planet}{m.isCurrent ? ' ★' : ''}</td>
+            <td>{m.years}y</td>
+            <td>{m.start}</td>
+            <td>{m.end}</td>
           </tr>
         ))}
       </tbody>
     </table>
-  </div>
-))}
+
+    <div class="section-title">Antardasha &amp; Pratyantardasha</div>
+    {mahaTimeline.map(m => (
+      <div style="margin-bottom:8px">
+        <div class="maha-header" style={`border-left-color:${DASHA_COLORS[m.planet] ?? '#475569'}`}>
+          <span style={`color:${DASHA_COLORS[m.planet] ?? '#334155'}`}>{m.planet}</span> Maha Dasha ({m.years}y) &middot; {m.start} — {m.end}
+        </div>
+        <table>
+          <thead><tr><th>Antardasha</th><th>Duration</th><th>Period</th><th>Pratyantardasha</th></tr></thead>
+          <tbody>
+            {m.antars.map(a => (
+              <tr style={a.isCurrent ? 'background:#eff6ff;font-weight:600' : ''}>
+                <td style={`font-weight:600;color:${DASHA_COLORS[a.planet] ?? '#334155'}`}>{m.planet}/{a.planet}</td>
+                <td>{a.duration}</td>
+                <td>{a.start} — {a.end}</td>
+                <td style="font-size:10px;color:#64748b">{a.pratyantars}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ))}
+  </>
+)}
 
 <div class="footer">StarYaar &middot; Swiss Ephemeris (Moshier) &middot; Lahiri Ayanamsa &middot; Generated {generatedDate}</div>
 </div>
