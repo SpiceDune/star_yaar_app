@@ -57,6 +57,8 @@
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
+details summary::-webkit-details-marker { display: none; }
+
 /* Fade-in animation for report sections */
 @keyframes fadeUp {
   from {

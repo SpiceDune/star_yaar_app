@@ -7,7 +7,9 @@ import { getPanchangByDate } from '../../lib/db/panchang';
 import { getCityLatLon } from '../../lib/db/cities';
 import { computeKundli } from '../../lib/compute-kundli';
 import { mockChartD1, mockPanchang, mockDasha } from '../../lib/mock-data';
-import { RASHI_ENGLISH } from '../../lib/constants';
+import { RASHI_ENGLISH, GRAHA_ICON_SVG, planetIconSvg } from '../../lib/constants';
+import { computeYogas, YOGA_CATEGORY_LABELS } from '../../lib/yoga-engine';
+import type { YogaCategory } from '../../lib/yoga-engine';
 import type { ChartData, Panchang as PanchangType, GrahaId, RashiId } from '../../lib/types';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -144,26 +146,38 @@ for (let i = 1; i <= 8; i++) {
   _fc = e;
 }
 
-// Pick 9 from birth onward
+// Pick 9 from birth onward, clipping the first period to start at birth
 const [_by, _bm, _bd] = dobRaw.split('-').map(Number);
 const _birthMs = new Date(_by, _bm - 1, _bd).getTime();
 let _fi = _allMaha.findIndex(e => e.startMs <= _birthMs && e.endMs > _birthMs);
 if (_fi < 0) _fi = Math.max(0, _allMaha.length - 9);
-const _lifeMahas = _allMaha.slice(_fi, _fi + 9);
+const _lifeMahasRaw = _allMaha.slice(_fi, _fi + 9);
+const _lifeMahas = _lifeMahasRaw.map((m, idx) => {
+  if (idx === 0 && m.startMs < _birthMs) {
+    const remainingYears = (m.endMs - _birthMs) / _MS_YEAR;
+    return { ...m, startMs: _birthMs, years: Math.round(remainingYears * 10) / 10 };
+  }
+  return m;
+});
 
 // Build full timeline with Antardashas
 import type { MahaEntry, AntarEntry } from '../../components/report/DashaTimeline';
-const mahasTimeline: MahaEntry[] = _lifeMahas.map(maha => {
+const mahasTimeline: MahaEntry[] = _lifeMahas.map((maha, mi) => {
   const mIdx = VIMSHOTTARI_SEQ.indexOf(maha.planet);
-  const antars: AntarEntry[] = [];
-  let ac = maha.startMs;
+  const fullYears = VIMSHOTTARI_YEARS[maha.planet] ?? 0;
+  const origRaw = _lifeMahasRaw[mi];
+  const origStart = origRaw.startMs;
+  const isFirstClipped = mi === 0 && origStart < _birthMs;
+
+  const allAntars: AntarEntry[] = [];
+  let ac = origStart;
   for (let i = 0; i < 9; i++) {
     const idx = (mIdx + i) % 9;
     const p = VIMSHOTTARI_SEQ[idx];
-    const durY = (maha.years * (VIMSHOTTARI_YEARS[p] ?? 0)) / 120;
+    const durY = (fullYears * (VIMSHOTTARI_YEARS[p] ?? 0)) / 120;
     const durMs = durY * _MS_YEAR;
     const s = ac; const e = ac + durMs;
-    antars.push({
+    allAntars.push({
       planet: p,
       duration: _fmtDur(durY),
       startMs: s,
@@ -171,10 +185,24 @@ const mahasTimeline: MahaEntry[] = _lifeMahas.map(maha => {
       start: _fmtDate(s),
       end: _fmtDate(e),
       isCurrent: maha.planet === _curMaha && p === _curAntar && s <= _nowMs && e > _nowMs,
-      mahaYears: maha.years,
+      mahaYears: fullYears,
     });
     ac = e;
   }
+
+  let antars = allAntars;
+  if (isFirstClipped) {
+    antars = allAntars
+      .filter(a => a.endMs > _birthMs)
+      .map((a, ai) => {
+        if (ai === 0 && a.startMs < _birthMs) {
+          const remainY = (a.endMs - _birthMs) / _MS_YEAR;
+          return { ...a, startMs: _birthMs, start: _fmtDate(_birthMs), duration: _fmtDur(remainY) };
+        }
+        return a;
+      });
+  }
+
   return {
     planet: maha.planet,
     years: maha.years,
@@ -184,6 +212,25 @@ const mahasTimeline: MahaEntry[] = _lifeMahas.map(maha => {
     antars,
   };
 });
+
+// Compute Yogas
+const yogaResults = computeYogas(chartData);
+const yogasByCategory = new Map<YogaCategory, typeof yogaResults>();
+for (const y of yogaResults) {
+  const list = yogasByCategory.get(y.category) ?? [];
+  list.push(y);
+  yogasByCategory.set(y.category, list);
+}
+const categoryOrder: YogaCategory[] = ['mahapurusha', 'raja', 'dhana', 'lunar', 'special', 'dosha'];
+
+const yogaCatDesc: Record<string, string> = {
+  mahapurusha: 'Formed when Mars, Mercury, Jupiter, Venus, or Saturn occupies a Kendra in own/exalted sign',
+  raja: 'Kendra and Trikona lords connecting — the hallmark of power and authority',
+  dhana: 'Planetary combinations indicating wealth accumulation and financial prosperity',
+  lunar: 'Yogas formed based on the Moon\'s relationship with surrounding planets',
+  special: 'Rare and notable combinations with unique effects on the native\'s life',
+  dosha: 'Challenging planetary placements that may require awareness and remedies',
+};
 
 const reportTabs = [
   { id: 'planets', label: 'Planets' },
@@ -252,31 +299,40 @@ const reportTabs = [
       </div>
 
       <!-- Dasha -->
-      <div class="rounded-xl border border-stone-200/80 bg-white p-5">
-        <h2 class="text-base font-bold text-slate-800 tracking-tight mb-4">Current Dasha Period</h2>
-        <div class="space-y-3">
-          {dashaData.periods.map((period) => {
+      <div class="rounded-xl border border-slate-200/80 bg-white p-5">
+        <h2 class="text-base font-bold text-slate-800 tracking-tight mb-4">Current Dasha</h2>
+
+        <div class="space-y-2">
+          {dashaData.periods.map((period, idx) => {
             const col = DASHA_COLORS[period.planet] ?? '#334155';
+            const isFirst = idx === 0;
             return (
-              <div class="flex items-center gap-4 rounded-lg bg-slate-50 px-4 py-3">
-                <div class="shrink-0 w-2.5 h-10 rounded-full" style={`background:${col}`} />
-                <div class="min-w-0 flex-1">
-                  <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500 leading-none mb-1">{period.label}</p>
-                  <p class="text-lg font-extrabold tracking-tight leading-tight" style={`color:${col}`}>{period.planet}</p>
-                </div>
-                <div class="text-right shrink-0">
-                  <p class="text-sm font-bold text-slate-700">{period.duration}</p>
-                  <p class="text-xs font-semibold text-slate-500 mt-0.5">{period.start} — {period.end}</p>
+              <div class="relative overflow-hidden rounded-lg" style={`background:${col}08`}>
+                <div class="absolute left-0 top-0 bottom-0 w-1 rounded-full" style={`background:${col}`} />
+                <div class="pl-4 pr-3 py-2.5 flex items-center gap-3">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 leading-none mb-0.5">{period.label}</p>
+                    <p class={`font-extrabold tracking-tight leading-tight inline-flex items-center gap-1.5 ${isFirst ? 'text-xl' : 'text-base'}`} style={`color:${col}`}>
+                      <span set:html={planetIconSvg(period.planet, isFirst ? 20 : 16)} />{period.planet}
+                    </p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <p class={`font-bold text-slate-700 ${isFirst ? 'text-base' : 'text-sm'}`}>{period.duration}</p>
+                    <p class="text-[11px] font-semibold text-slate-500 mt-0.5">{period.start} – {period.end}</p>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
-        <div class="mt-3 flex items-center gap-1.5 text-sm font-bold text-slate-600">
+
+        <div class="mt-3 flex items-center justify-center gap-1">
           {dashaData.periods.map((p, i) => (
             <Fragment>
-              {i > 0 && <span class="text-slate-300">→</span>}
-              <span style={`color:${DASHA_COLORS[p.planet] ?? '#334155'}`}>{p.planet}</span>
+              {i > 0 && (
+                <svg class="w-3.5 h-3.5 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
+              )}
+              <span class="text-xs font-bold inline-flex items-center gap-0.5" style={`color:${DASHA_COLORS[p.planet] ?? '#334155'}`}><span set:html={planetIconSvg(p.planet, 12)} />{p.planet}</span>
             </Fragment>
           ))}
         </div>
@@ -317,7 +373,9 @@ const reportTabs = [
           {planetRows.map((p, i) => (
             <tr class={i < planetRows.length - 1 ? 'border-b border-stone-100' : ''}>
               <td class="px-5 py-3">
-                <span class="font-bold" style={`color:${DASHA_COLORS[p.graha] ?? '#334155'}`}>{p.graha}</span>
+                <span class="font-bold inline-flex items-center gap-1.5" style={`color:${DASHA_COLORS[p.graha] ?? '#334155'}`}>
+                  <span set:html={planetIconSvg(p.graha, 16)} />{p.graha}
+                </span>
               </td>
               <td class="px-5 py-3">
                 <span class="font-semibold text-stone-700">{p.sign}</span>
@@ -339,7 +397,7 @@ const reportTabs = [
     <div class="md:hidden space-y-2.5">
       {planetRows.map((p) => (
         <div class="rounded-xl border border-stone-200/80 bg-white px-4 py-3 flex items-center gap-3">
-          <div class="shrink-0 w-2 h-8 rounded-full" style={`background:${DASHA_COLORS[p.graha] ?? '#334155'}`} />
+          <span class="shrink-0" style={`color:${DASHA_COLORS[p.graha] ?? '#334155'}`} set:html={planetIconSvg(p.graha, 20)} />
           <div class="flex-1 min-w-0">
             <p class="font-bold text-sm" style={`color:${DASHA_COLORS[p.graha] ?? '#334155'}`}>
               {p.graha}
@@ -365,14 +423,88 @@ const reportTabs = [
 
   <!-- 3. Yogas -->
   <section id="yogas" class="pt-8 scroll-mt-16">
-    <h2 class="text-lg font-bold text-slate-800 tracking-tight mb-4">Yogas <span class="text-slate-500 font-normal text-xs">(Combinations)</span></h2>
-    <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-6 md:p-8 text-center">
-      <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+    <h2 class="text-lg font-bold text-slate-800 tracking-tight mb-1">Yogas <span class="text-slate-500 font-normal text-xs">(Planetary Combinations)</span></h2>
+    <p class="text-xs font-semibold text-slate-500 mb-5">{yogaResults.length} yoga{yogaResults.length !== 1 ? 's' : ''} found in your chart</p>
+
+    {yogaResults.length === 0 ? (
+      <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-6 text-center">
+        <p class="text-sm font-bold text-slate-600">No prominent yogas detected</p>
+        <p class="text-xs text-slate-500 mt-1">This is rare — most charts have at least one yoga</p>
       </div>
-      <p class="text-sm font-bold text-slate-700 mb-1">Coming Soon</p>
-      <p class="text-xs font-medium text-slate-500 max-w-sm mx-auto">Yoga analysis identifies special planetary combinations in your chart — Raj Yoga, Dhan Yoga, Gajakesari, and more.</p>
-    </div>
+    ) : (
+      <div class="space-y-8">
+        {categoryOrder.map(cat => {
+          const yogas = yogasByCategory.get(cat);
+          if (!yogas || yogas.length === 0) return null;
+          const isDosha = cat === 'dosha';
+          return (
+            <div>
+              <div class="mb-3">
+                <h3 class={`text-sm font-bold uppercase tracking-wide ${isDosha ? 'text-red-600' : 'text-slate-800'}`}>{YOGA_CATEGORY_LABELS[cat]}</h3>
+                <p class="text-xs text-slate-600 mt-0.5">{yogaCatDesc[cat]}</p>
+              </div>
+              <div class="space-y-3">
+                {yogas.map(yoga => {
+                  const sColor = isDosha
+                    ? (yoga.strength === 'strong' ? '#dc2626' : yoga.strength === 'moderate' ? '#f97316' : '#64748b')
+                    : (yoga.strength === 'strong' ? '#059669' : yoga.strength === 'moderate' ? '#3b82f6' : '#64748b');
+                  const sLabel = isDosha
+                    ? (yoga.strength === 'strong' ? 'Significant' : yoga.strength === 'moderate' ? 'Present' : 'Mild')
+                    : (yoga.strength === 'strong' ? 'Very Powerful' : yoga.strength === 'moderate' ? 'Active' : 'Mild');
+                  const bars = yoga.strength === 'strong' ? 3 : yoga.strength === 'moderate' ? 2 : 1;
+                  return (
+                  <div class={`rounded-xl border overflow-hidden ${isDosha ? 'border-red-200/60 bg-red-50/30' : 'border-slate-200/80 bg-white'}`}>
+                    <div class="px-4 py-4">
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class={`text-[15px] font-bold tracking-tight ${isDosha ? 'text-red-700' : 'text-slate-900'}`}>{yoga.name}</span>
+                          {yoga.sanskrit && <span class="text-sm text-slate-500 font-medium">{yoga.sanskrit}</span>}
+                          <span class="flex items-center gap-1.5 ml-auto sm:ml-0">
+                            <span class="flex items-end gap-[3px]" title={sLabel}>
+                              {[1, 2, 3].map(n => (
+                                <span class={`w-[4px] rounded-sm ${n === 1 ? 'h-[8px]' : n === 2 ? 'h-[12px]' : 'h-[16px]'}`}
+                                  style={`background:${n <= bars ? sColor : '#cbd5e1'}`} />
+                              ))}
+                            </span>
+                            <span class="text-xs font-bold" style={`color:${sColor}`}>{sLabel}</span>
+                          </span>
+                        </div>
+                        <p class="text-sm text-slate-600 mt-1.5 font-medium">{yoga.description}</p>
+                        <p class="text-sm text-slate-800 mt-1.5 leading-relaxed">{yoga.effect}</p>
+
+                        <div class="flex items-center gap-2 mt-3 flex-wrap">
+                          {yoga.planets.map(planet => (
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 inline-flex items-center gap-1" style={`color:${DASHA_COLORS[planet] ?? '#334155'}`}>
+                              <span set:html={planetIconSvg(planet, 14)} />{planet}
+                            </span>
+                          ))}
+                          {yoga.houses.length > 0 && (
+                            <span class="text-xs font-bold text-slate-500">H{[...new Set(yoga.houses)].join(', H')}</span>
+                          )}
+                        </div>
+
+                        {yoga.detail && (
+                          <details class="mt-3 group">
+                            <summary class={`text-sm font-semibold cursor-pointer select-none list-none flex items-center gap-1.5 ${isDosha ? 'text-red-500 hover:text-red-700' : 'text-blue-600 hover:text-blue-800'} transition-colors`}>
+                              <svg class="w-4 h-4 shrink-0 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                              Learn more about this yoga
+                            </summary>
+                            <div class={`mt-2.5 pl-5 border-l-2 ${isDosha ? 'border-red-200' : 'border-slate-200'}`}>
+                              <p class="text-sm text-slate-700 leading-relaxed">{yoga.detail}</p>
+                            </div>
+                          </details>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
   </section>
 
   <!-- 4. Transits -->
