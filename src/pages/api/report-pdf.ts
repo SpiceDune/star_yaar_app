@@ -48,7 +48,11 @@ export const GET: APIRoute = async ({ request }) => {
     const page = await browser.newPage();
 
     const cookies = request.headers.get('cookie') ?? '';
-    const origin = new URL(request.url).origin;
+    const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host');
+    const proto = request.headers.get('x-forwarded-proto') || 'https';
+    const origin = forwardedHost
+      ? `${proto}://${forwardedHost}`
+      : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : new URL(request.url).origin);
 
     if (cookies) {
       const cookiePairs = cookies.split(';').map(c => c.trim()).filter(Boolean);
