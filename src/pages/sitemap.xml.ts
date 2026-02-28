@@ -7,6 +7,7 @@ const staticPages = [
   { url: '/', priority: '1.0', changefreq: 'weekly' },
   { url: '/kundli', priority: '0.9', changefreq: 'monthly' },
   { url: '/kundli/celebrity', priority: '0.8', changefreq: 'weekly' },
+  { url: '/faq', priority: '0.6', changefreq: 'monthly' },
 ];
 
 export const GET: APIRoute = () => {

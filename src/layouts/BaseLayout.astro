@@ -4,6 +4,7 @@ interface Props {
   title?: string;
 }
 const { title = 'StarYaar' } = Astro.props;
+const gaId = import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? '';
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -15,6 +16,17 @@ const { title = 'StarYaar' } = Astro.props;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    {gaId && (
+      <Fragment>
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+        <script is:inline define:vars={{ gaId }}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', gaId);
+        </script>
+      </Fragment>
+    )}
     <script is:inline>
       (function(){
         var c=localStorage.getItem('color-theme');

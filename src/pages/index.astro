@@ -1,15 +1,44 @@
 ---
 import ReportLayout from '../layouts/ReportLayout.astro';
 import KundliForm from '../components/form/KundliForm';
+
+const seoTitle = 'Free Kundli Online – Janam Kundali & Vedic Birth Chart | StarYaar';
+const seoDesc = 'Generate your free Kundli online instantly. Get detailed Janam Kundali with planetary positions, Vimshottari Dasha timeline, Yogas, transits, and 16 divisional charts. Accurate Vedic birth chart powered by Swiss Ephemeris.';
 ---
-<ReportLayout title="Free Kundli Online | StarYaar – Your Indian Astrology Buddy">
+
+<ReportLayout title={seoTitle}>
+  <Fragment slot="head">
+    <meta name="description" content={seoDesc} />
+    <link rel="canonical" href="https://staryaar.com/" />
+    <meta property="og:title" content={seoTitle} />
+    <meta property="og:description" content={seoDesc} />
+    <meta property="og:url" content="https://staryaar.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="StarYaar" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={seoTitle} />
+    <meta name="twitter:description" content={seoDesc} />
+    <meta name="keywords" content="kundli, free kundli online, kundali, janam kundali, birth chart, vedic astrology, horoscope, jyotish, dasha, yogas, planetary positions" />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "StarYaar",
+      "url": "https://staryaar.com",
+      "description": seoDesc,
+      "applicationCategory": "Lifestyle",
+      "operatingSystem": "Web",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "INR" },
+      "publisher": { "@type": "Organization", "name": "StarYaar", "url": "https://staryaar.com" },
+    })} />
+  </Fragment>
+
   <div class="mx-auto max-w-2xl py-6 md:py-12">
     <div class="text-center mb-8 md:mb-10">
       <h1 class="font-display text-3xl md:text-5xl text-foreground leading-tight">
         Free Kundli Online
       </h1>
       <p class="text-muted-foreground text-sm md:text-base mt-2 md:mt-3 max-w-md mx-auto">
-        Get your complete Vedic birth chart with Yogas, Dasha timeline, and transit analysis
+        Generate your Janam Kundali with detailed Vedic birth chart analysis — Yogas, Dasha timeline, and transit predictions
       </p>
     </div>
     <div class="w-full">
@@ -19,4 +48,42 @@ import KundliForm from '../components/form/KundliForm';
       <a href="/kundli/sample" class="text-foreground hover:text-primary font-medium underline underline-offset-4">View sample report</a>
     </p>
   </div>
+
+  <!-- SEO content section -->
+  <section class="mx-auto max-w-2xl mt-8 md:mt-12 mb-4">
+    <div class="border-t border-border pt-8 md:pt-10 space-y-8">
+      <div>
+        <h2 class="text-lg font-bold text-foreground tracking-tight mb-2">What is a Kundli?</h2>
+        <p class="text-sm text-muted-foreground leading-relaxed">
+          A Kundli (also spelled Kundali orKundli) is your Vedic birth chart — a map of the sky at the exact moment you were born. It shows the positions of the Sun, Moon, and planets across the 12 zodiac signs and houses. In Jyotish (Vedic astrology), your Janam Kundali is the foundation for understanding your personality, career, relationships, health, and life events.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-lg font-bold text-foreground tracking-tight mb-2">What does StarYaar's Kundli include?</h2>
+        <ul class="text-sm text-muted-foreground leading-relaxed space-y-1.5">
+          <li class="flex gap-2"><span class="text-primary mt-0.5">•</span>Accurate planetary positions using Swiss Ephemeris with Lahiri Ayanamsa</li>
+          <li class="flex gap-2"><span class="text-primary mt-0.5">•</span>Vimshottari Dasha timeline with Mahadasha, Antardasha, and Pratyantardasha periods</li>
+          <li class="flex gap-2"><span class="text-primary mt-0.5">•</span>Yoga analysis — Mahapurusha, Raja, Dhana, Lunar, and Dosha detection</li>
+          <li class="flex gap-2"><span class="text-primary mt-0.5">•</span>Real-time transit predictions showing current planetary effects on your chart</li>
+          <li class="flex gap-2"><span class="text-primary mt-0.5">•</span>16 divisional charts (D1 to D60) for deeper life-area analysis</li>
+          <li class="flex gap-2"><span class="text-primary mt-0.5">•</span>Panchang details — Tithi, Nakshatra, Yoga, Karana, and Vara</li>
+          <li class="flex gap-2"><span class="text-primary mt-0.5">•</span>Shareable link and downloadable PDF report</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="text-lg font-bold text-foreground tracking-tight mb-2">How accurate is this birth chart?</h2>
+        <p class="text-sm text-muted-foreground leading-relaxed">
+          StarYaar uses the Swiss Ephemeris (Moshier mode) — the same astronomical engine trusted by professional astrology software worldwide. Planetary positions are computed with sub-arc-second precision. The accuracy of your Kundli depends primarily on your birth time — even a few minutes can change the Ascendant (Lagna), so enter your time as precisely as possible.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-3 pt-2">
+        <a href="/kundli/celebrity" class="text-sm font-medium text-foreground hover:text-primary underline underline-offset-4 transition-colors">Browse celebrity birth charts</a>
+        <span class="text-muted-foreground/30">·</span>
+        <a href="/faq" class="text-sm font-medium text-foreground hover:text-primary underline underline-offset-4 transition-colors">Frequently asked questions</a>
+      </div>
+    </div>
+  </section>
 </ReportLayout>
