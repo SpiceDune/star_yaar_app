@@ -1,0 +1,45 @@
+---
+import ReportLayout from '../../../layouts/ReportLayout.astro';
+import CelebrityDirectory from '../../../components/celebrity/CelebrityDirectory';
+import { celebrities } from '../../../data/celebrities';
+
+const seoTitle = 'Celebrity Kundli – Famous Birth Charts | StarYaar';
+const seoDesc = 'Browse Vedic birth charts (Kundli) of famous Indian celebrities, cricketers, politicians, and business leaders. View their planetary positions, Dasha timelines, and Yogas.';
+---
+
+<ReportLayout title={seoTitle} wide={true}>
+  <Fragment slot="head">
+    <meta name="description" content={seoDesc} />
+    <link rel="canonical" href="https://staryaar.com/kundli/celebrity" />
+    <meta property="og:title" content={seoTitle} />
+    <meta property="og:description" content={seoDesc} />
+    <meta property="og:url" content="https://staryaar.com/kundli/celebrity" />
+    <meta property="og:type" content="website" />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Celebrity Kundli Charts",
+      "description": seoDesc,
+      "url": "https://staryaar.com/kundli/celebrity",
+      "publisher": { "@type": "Organization", "name": "StarYaar" },
+    })} />
+  </Fragment>
+
+  <div class="py-4 md:py-8">
+    <div class="text-center mb-8 md:mb-10">
+      <h1 class="text-2xl md:text-4xl font-bold text-foreground tracking-tight">
+        Celebrity Birth Charts
+      </h1>
+      <p class="text-muted-foreground text-sm md:text-base mt-2 max-w-lg mx-auto">
+        Explore detailed Vedic birth charts of famous personalities — planetary positions, Dasha timelines, Yogas, and more
+      </p>
+      <p class="text-xs text-muted-foreground/60 mt-2">{celebrities.length} charts and growing</p>
+    </div>
+
+    <CelebrityDirectory client:load celebrities={celebrities} />
+
+    <p class="text-center text-[11px] text-muted-foreground/60 mt-10 max-w-lg mx-auto">
+      Birth data sourced from publicly available records and astrology databases. Chart accuracy depends on birth time precision.
+    </p>
+  </div>
+</ReportLayout>

@@ -22,6 +22,7 @@ const { title = 'Kundli Report | StarYaar', wide = false } = Astro.props;
       </a>
       <nav class="flex items-center gap-1" aria-label="Main">
         <a href="/kundli" class="text-foreground bg-accent px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors">Chart</a>
+        <a href="/kundli/celebrity" class="text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hidden sm:inline-flex">Celebrities</a>
         <a href="/#about" class="text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">About</a>
         <a href="/#faq" class="text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">FAQ</a>
         <ThemeToggle client:load />
