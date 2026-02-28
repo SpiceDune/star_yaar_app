@@ -11,7 +11,8 @@
     "db:seed-panchang": "node scripts/seed-panchang.mjs",
     "db:seed-cities": "node scripts/seed-cities.mjs",
     "test:cities": "node scripts/test-cities.mjs",
-    "query:cities": "node scripts/query-cities.mjs"
+    "query:cities": "node scripts/query-cities.mjs",
+    "celeb:add": "node scripts/add-celebrity.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^4.4.2",
