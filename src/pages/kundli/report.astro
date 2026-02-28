@@ -1,0 +1,516 @@
+---
+import { getCityLatLon } from '../../lib/db/cities';
+import { getPanchangByDate } from '../../lib/db/panchang';
+import { computeKundli } from '../../lib/compute-kundli';
+import { mockChartD1, mockPanchang, mockDasha } from '../../lib/mock-data';
+import { RASHI_ENGLISH } from '../../lib/constants';
+import { computeYogas, YOGA_CATEGORY_LABELS } from '../../lib/yoga-engine';
+import { computeTransits } from '../../lib/compute-transits';
+import { computeAllVargaCharts } from '../../lib/divisional-charts';
+import type { ChartData, Panchang as PanchangType, GrahaId, RashiId } from '../../lib/types';
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function formatDOB(iso: string | undefined): string {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!d || !m) return iso;
+  return `${d} ${MONTHS[m - 1]} ${y}`;
+}
+
+const cookie = (key: string) => Astro.cookies.get(`kundli_${key}`)?.value ?? undefined;
+const name = cookie('name') || Astro.url.searchParams.get('name') || 'Sample User';
+const dobRaw = cookie('dob') || Astro.url.searchParams.get('dob') || '1981-05-31';
+const timeCookie = cookie('time') || Astro.url.searchParams.get('time') || '';
+const timeOfBirth = timeCookie || '10:30 AM';
+const city = cookie('city') || Astro.url.searchParams.get('city') || 'Mumbai, India';
+const formattedDOB = formatDOB(dobRaw) || dobRaw;
+const timeForCompute = timeCookie.replace(/\s*(AM|PM)$/i, '').trim() || '12:00';
+
+let panchangData: PanchangType = mockPanchang;
+const panchangFromDb = dobRaw ? await getPanchangByDate(dobRaw) : null;
+if (panchangFromDb) panchangData = panchangFromDb;
+
+let chartData: ChartData = mockChartD1;
+let dashaData = mockDasha;
+const latCookie = cookie('lat');
+const lonCookie = cookie('lon');
+const tzCookie = cookie('tz');
+let cityLoc: { lat: number; lon: number; timezone?: string } | null = null;
+if (latCookie != null && lonCookie != null && !Number.isNaN(Number(latCookie)) && !Number.isNaN(Number(lonCookie))) {
+  cityLoc = { lat: Number(latCookie), lon: Number(lonCookie), timezone: tzCookie };
+}
+if (!cityLoc) cityLoc = await getCityLatLon(city);
+if (cityLoc && dobRaw) {
+  const computed = await computeKundli({ dob: dobRaw, time: timeForCompute, lat: cityLoc.lat, lon: cityLoc.lon, timezone: cityLoc.timezone || 'Asia/Kolkata' });
+  if (computed) { chartData = computed.chartData; dashaData = computed.dasha; }
+}
+
+const PLANET_COLORS: Record<string, string> = {
+  Sun: '#ea580c', Moon: '#7c3aed', Mars: '#e11d48', Mercury: '#059669',
+  Jupiter: '#d97706', Venus: '#ec4899', Saturn: '#475569', Rahu: '#2563eb', Ketu: '#6366f1',
+};
+const PLANET_ORDER: GrahaId[] = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+const RASHI_ORDER: RashiId[] = ['Mesha','Vrishabha','Mithuna','Karka','Simha','Kanya','Tula','Vrishchika','Dhanu','Makara','Kumbha','Meena'];
+
+const NAKSHATRAS = ['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','P.Phalguni','U.Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','P.Ashadha','U.Ashadha','Shravana','Dhanishta','Shatabhisha','P.Bhadra','U.Bhadra','Revati'];
+function getNakshatra(rashiIdx: number, degInSign: number): { name: string; pada: number } {
+  const totalDeg = rashiIdx * 30 + degInSign;
+  const nakshatraSpan = 360 / 27;
+  const idx = Math.floor(totalDeg / nakshatraSpan) % 27;
+  const degInNakshatra = totalDeg - idx * nakshatraSpan;
+  const pada = Math.min(4, Math.floor(degInNakshatra / (nakshatraSpan / 4)) + 1);
+  return { name: NAKSHATRAS[idx], pada };
+}
+
+interface PlanetRow { graha: GrahaId; sign: string; signSanskrit: string; degree: number; house: number; retrograde: boolean; nakshatra: string; pada: number; }
+const planetRows: PlanetRow[] = [];
+for (let h = 1; h <= 12; h++) {
+  const house = chartData.houses[h];
+  if (!house?.planets) continue;
+  const rashiIdx = RASHI_ORDER.indexOf(house.rashi);
+  for (const p of house.planets) {
+    const nak = getNakshatra(rashiIdx, p.degree);
+    planetRows.push({ graha: p.graha, sign: RASHI_ENGLISH[house.rashi] ?? String(house.rashi), signSanskrit: String(house.rashi), degree: p.degree, house: h, retrograde: p.retrograde ?? false, nakshatra: nak.name, pada: nak.pada });
+  }
+}
+planetRows.sort((a, b) => PLANET_ORDER.indexOf(a.graha) - PLANET_ORDER.indexOf(b.graha));
+
+const VIMSHOTTARI_SEQ = ['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury'];
+const VIMSHOTTARI_YEARS: Record<string, number> = { Ketu: 7, Venus: 20, Sun: 6, Moon: 10, Mars: 7, Rahu: 18, Jupiter: 16, Saturn: 19, Mercury: 17 };
+const _MS_YEAR = 365.25 * 24 * 3600 * 1000;
+function _parseDate(s: string): number { const parts = s.split(' '); if (parts.length !== 3) return Date.now(); return new Date(Number(parts[2]), MONTHS.indexOf(parts[1]), Number(parts[0])).getTime(); }
+function _fmtDate(ms: number): string { const dt = new Date(ms); return `${dt.getDate()} ${MONTHS[dt.getMonth()]} ${dt.getFullYear()}`; }
+function _fmtDur(y: number): string { if (y >= 1) return `${y.toFixed(1)}y`; const m = y * 12; if (m >= 1) return `${Math.round(m)}m`; return `${Math.round(y * 365)}d`; }
+
+const _curMaha = dashaData.periods[0]?.planet ?? '';
+const _curAntar = dashaData.periods[1]?.planet ?? '';
+const _curPratyantar = dashaData.periods[2]?.planet ?? '';
+const _curMahaStartMs = _parseDate(dashaData.periods[0]?.start ?? '');
+const _curMahaEndMs = _parseDate(dashaData.periods[0]?.end ?? '');
+const _curMahaIdx = VIMSHOTTARI_SEQ.indexOf(_curMaha);
+const _nowMs = Date.now();
+const _allMaha: { planet: string; startMs: number; endMs: number; years: number }[] = [];
+const _back: typeof _allMaha = [];
+let _bc = _curMahaStartMs;
+for (let i = 1; i <= 8; i++) { const idx = ((_curMahaIdx - i) % 9 + 9) % 9; const p = VIMSHOTTARI_SEQ[idx]; const yr = VIMSHOTTARI_YEARS[p]; const e = _bc; const s = e - yr * _MS_YEAR; _back.unshift({ planet: p, startMs: s, endMs: e, years: yr }); _bc = s; }
+_allMaha.push(..._back);
+_allMaha.push({ planet: _curMaha, startMs: _curMahaStartMs, endMs: _curMahaEndMs, years: VIMSHOTTARI_YEARS[_curMaha] ?? 0 });
+let _fc = _curMahaEndMs;
+for (let i = 1; i <= 8; i++) { const idx = (_curMahaIdx + i) % 9; const p = VIMSHOTTARI_SEQ[idx]; const yr = VIMSHOTTARI_YEARS[p]; const s = _fc; const e = s + yr * _MS_YEAR; _allMaha.push({ planet: p, startMs: s, endMs: e, years: yr }); _fc = e; }
+const [_by, _bm, _bd] = dobRaw.split('-').map(Number);
+const _birthMs = new Date(_by, _bm - 1, _bd).getTime();
+let _fi = _allMaha.findIndex(e => e.startMs <= _birthMs && e.endMs > _birthMs);
+if (_fi < 0) _fi = Math.max(0, _allMaha.length - 9);
+const _lifeMahasRaw = _allMaha.slice(_fi, _fi + 9);
+const _lifeMahas = _lifeMahasRaw.map((m, idx) => {
+  if (idx === 0 && m.startMs < _birthMs) { return { ...m, startMs: _birthMs, years: Math.round((m.endMs - _birthMs) / _MS_YEAR * 10) / 10 }; }
+  return m;
+});
+
+function buildAntars(maha: typeof _lifeMahas[0], mahaRaw: typeof _lifeMahasRaw[0], mi: number) {
+  const mIdx = VIMSHOTTARI_SEQ.indexOf(maha.planet);
+  const fullYears = VIMSHOTTARI_YEARS[maha.planet] ?? 0;
+  const origStart = mahaRaw.startMs;
+  const isFirstClipped = mi === 0 && origStart < _birthMs;
+  const allAntars: { planet: string; duration: string; start: string; end: string; startMs: number; endMs: number; isCurrent: boolean; pratyantars: string }[] = [];
+  let ac = origStart;
+  for (let i = 0; i < 9; i++) {
+    const idx2 = (mIdx + i) % 9;
+    const p2 = VIMSHOTTARI_SEQ[idx2];
+    const durY = (fullYears * (VIMSHOTTARI_YEARS[p2] ?? 0)) / 120;
+    const durMs = durY * _MS_YEAR;
+    const s2 = ac; const e2 = ac + durMs;
+    const pratParts: string[] = [];
+    let pc = s2;
+    for (let j = 0; j < 9; j++) {
+      const idx3 = (idx2 + j) % 9;
+      const p3 = VIMSHOTTARI_SEQ[idx3];
+      const pratDurY = (durY * (VIMSHOTTARI_YEARS[p3] ?? 0)) / 120;
+      const pratDurMs = pratDurY * _MS_YEAR;
+      pratParts.push(`${p3}(${Math.round(pratDurMs / 86400000)}d)`);
+      pc += pratDurMs;
+    }
+    allAntars.push({ planet: p2, duration: _fmtDur(durY), start: _fmtDate(s2), end: _fmtDate(e2), startMs: s2, endMs: e2, isCurrent: maha.planet === _curMaha && p2 === _curAntar && s2 <= _nowMs && e2 > _nowMs, pratyantars: pratParts.join(', ') });
+    ac = e2;
+  }
+  if (isFirstClipped) {
+    return allAntars.filter(a => a.endMs > _birthMs).map((a, ai) => {
+      if (ai === 0 && a.startMs < _birthMs) { return { ...a, start: _fmtDate(_birthMs) }; }
+      return a;
+    });
+  }
+  return allAntars;
+}
+
+const mahaTimeline = _lifeMahas.map((m, mi) => ({
+  planet: m.planet,
+  years: m.years,
+  start: _fmtDate(m.startMs),
+  end: _fmtDate(m.endMs),
+  isCurrent: m.planet === _curMaha,
+  antars: buildAntars(m, _lifeMahasRaw[mi], mi),
+}));
+
+const yogaResults = computeYogas(chartData);
+const transitResult = await computeTransits(chartData);
+const vargaCharts = computeAllVargaCharts(chartData);
+const d9 = vargaCharts.find(v => v.def.division === 9);
+
+function buildChartSvg(houses: ChartData['houses'], lagna: RashiId): string {
+  const P = 20, S = 460;
+  const housePositions: Record<number, { sx: number; sy: number; px: number; py: number; isCorner: boolean }> = {
+    1:  { sx: 250, sy: 100,  px: 250, py: 150, isCorner: false },
+    2:  { sx: 135, sy: 52,   px: 135, py: 88,  isCorner: true },
+    3:  { sx: 65,  sy: 120,  px: 65,  py: 152, isCorner: true },
+    4:  { sx: 135, sy: 225,  px: 135, py: 268, isCorner: false },
+    5:  { sx: 65,  sy: 355,  px: 65,  py: 385, isCorner: true },
+    6:  { sx: 135, sy: 422,  px: 135, py: 452, isCorner: true },
+    7:  { sx: 250, sy: 345,  px: 250, py: 385, isCorner: false },
+    8:  { sx: 365, sy: 422,  px: 365, py: 452, isCorner: true },
+    9:  { sx: 435, sy: 355,  px: 435, py: 385, isCorner: true },
+    10: { sx: 365, sy: 225,  px: 365, py: 268, isCorner: false },
+    11: { sx: 435, sy: 120,  px: 435, py: 152, isCorner: true },
+    12: { sx: 365, sy: 52,   px: 365, py: 88,  isCorner: true },
+  };
+  let svg = `<svg viewBox="0 0 500 500" width="100%" style="max-width:500px;font-family:Inter,system-ui,sans-serif">`;
+  svg += `<rect x="${P}" y="${P}" width="${S}" height="${S}" fill="#f8fafc" stroke="#475569" stroke-width="2" rx="3"/>`;
+  svg += `<polygon points="250,${P} ${P+S},250 250,${P+S} ${P},250" fill="none" stroke="#475569" stroke-width="1.5"/>`;
+  svg += `<line x1="${P}" y1="${P}" x2="${P+S}" y2="${P+S}" stroke="#94a3b8" stroke-width="0.75" stroke-dasharray="8,5"/>`;
+  svg += `<line x1="${P+S}" y1="${P}" x2="${P}" y2="${P+S}" stroke="#94a3b8" stroke-width="0.75" stroke-dasharray="8,5"/>`;
+  svg += `<text x="250" y="55" text-anchor="middle" font-size="11" fill="#6b7280" font-weight="700" letter-spacing="3">LAGNA</text>`;
+  for (let h = 1; h <= 12; h++) {
+    const data = houses[h];
+    if (!data) continue;
+    const pos = housePositions[h];
+    const pCount = data.planets.length;
+    const signYShift = pos.isCorner && pCount >= 3 ? -12 : pos.isCorner && pCount === 2 ? -5 : 0;
+    const rNum = RASHI_ORDER.indexOf(data.rashi) + 1;
+    svg += `<text x="${pos.sx}" y="${pos.sy + signYShift}" text-anchor="middle" font-size="14" font-weight="600" fill="#b45309">${RASHI_ENGLISH[data.rashi] ?? data.rashi}<tspan font-size="10" font-weight="500" fill="#d4956b" dx="3">(${rNum})</tspan></text>`;
+    if (pCount > 0) {
+      const ps = 16, ds = 11;
+      if (pos.isCorner) {
+        const vGap = ps + 2;
+        const startY = pos.py - ((pCount - 1) * vGap) / 2;
+        data.planets.slice(0, 6).forEach((p, i) => {
+          const y = startY + i * vGap;
+          const col = PLANET_COLORS[p.graha] ?? '#475569';
+          const deg = String(p.degree).padStart(2, '0');
+          svg += `<text x="${pos.px}" y="${y}" text-anchor="middle" font-size="${ps}" font-weight="700" fill="${col}">${p.graha.slice(0, 2)}${p.retrograde ? '*' : ''}<tspan font-size="${ds}" dy="${-ps*0.3}" dx="1" font-weight="600" fill-opacity="0.7">${deg}</tspan></text>`;
+        });
+      } else if (pCount <= 2) {
+        const gap = pCount === 1 ? 0 : 34;
+        data.planets.forEach((p, i) => {
+          const px = pCount === 1 ? pos.px : pos.px - gap + i * gap * 2;
+          const col = PLANET_COLORS[p.graha] ?? '#475569';
+          const deg = String(p.degree).padStart(2, '0');
+          svg += `<text x="${px}" y="${pos.py}" text-anchor="middle" font-size="${ps}" font-weight="700" fill="${col}">${p.graha.slice(0, 2)}${p.retrograde ? '*' : ''}<tspan font-size="${ds}" dy="${-ps*0.3}" dx="1" font-weight="600" fill-opacity="0.7">${deg}</tspan></text>`;
+        });
+      } else {
+        const cols = pCount >= 5 ? 3 : 2;
+        const rowH = ps + 3;
+        const colW = pCount >= 5 ? ps * 2.4 : ps * 2.6;
+        const rows = Math.ceil(Math.min(pCount, 9) / cols);
+        const ox = pos.px - ((Math.min(pCount, cols) - 1) * colW) / 2;
+        const oy = pos.py - ((rows - 1) * rowH) / 2;
+        data.planets.slice(0, 9).forEach((p, i) => {
+          const px = ox + (i % cols) * colW;
+          const py = oy + Math.floor(i / cols) * rowH;
+          const col = PLANET_COLORS[p.graha] ?? '#475569';
+          const deg = String(p.degree).padStart(2, '0');
+          const scaledPs = pCount >= 5 ? ps * 0.62 : pCount >= 4 ? ps * 0.70 : ps * 0.80;
+          const scaledDs = pCount >= 4 ? ds * 0.65 : ds * 0.75;
+          svg += `<text x="${px}" y="${py}" text-anchor="middle" font-size="${scaledPs}" font-weight="700" fill="${col}">${p.graha.slice(0, 2)}${p.retrograde ? '*' : ''}<tspan font-size="${scaledDs}" dy="${-scaledPs*0.3}" dx="1" font-weight="600" fill-opacity="0.7">${deg}</tspan></text>`;
+        });
+      }
+    }
+  }
+  svg += `</svg>`;
+  return svg;
+}
+
+function transitHouses(): ChartData['houses'] {
+  if (!transitResult) return chartData.houses;
+  const lagnaIdx = RASHI_ORDER.indexOf(chartData.lagna);
+  const h: ChartData['houses'] = {} as ChartData['houses'];
+  for (let i = 1; i <= 12; i++) { const ri = (lagnaIdx + i - 1) % 12; h[i] = { rashi: RASHI_ORDER[ri], planets: [] }; }
+  for (const t of transitResult.planets) { if (h[t.natalHouse]) h[t.natalHouse].planets.push({ graha: t.graha, degree: t.transitDegree, retrograde: t.retrograde }); }
+  return h;
+}
+
+function d9Houses(): ChartData['houses'] | null {
+  if (!d9) return null;
+  const lagnaIdx = RASHI_ORDER.indexOf(d9.lagna);
+  const h: ChartData['houses'] = {} as ChartData['houses'];
+  for (let i = 1; i <= 12; i++) { const ri = (lagnaIdx + i - 1) % 12; h[i] = { rashi: RASHI_ORDER[ri], planets: [] }; }
+  for (const p of d9.planets) { if (h[p.house]) h[p.house].planets.push({ graha: p.graha, degree: p.degree, retrograde: p.retrograde }); }
+  return h;
+}
+
+const d1Svg = buildChartSvg(chartData.houses, chartData.lagna);
+const d9H = d9Houses();
+const d9Svg = d9H ? buildChartSvg(d9H, d9!.lagna) : '';
+const transitH = transitHouses();
+const transitSvg = buildChartSvg(transitH, chartData.lagna);
+const now = new Date();
+const generatedDate = `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+
+const DASHA_COLORS: Record<string, string> = {
+  Sun: '#ea580c', Moon: '#7c3aed', Mars: '#e11d48', Mercury: '#059669',
+  Jupiter: '#d97706', Venus: '#ec4899', Saturn: '#475569', Rahu: '#2563eb', Ketu: '#6366f1',
+};
+---
+
+<html>
+<head>
+<meta charset="utf-8" />
+<title>StarYaar Report — {name}</title>
+<style>
+  @page { size: A4; margin: 10mm 10mm; }
+  @page:first { margin: 0; }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: Inter, 'Segoe UI', system-ui, sans-serif; color: #0f172a; padding: 0; font-size: 12px; line-height: 1.45; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .container { max-width: 780px; margin: 0 auto; padding: 0 16px; }
+
+  /* ── Cover Page ── */
+  .cover { width: 100%; height: 100vh; min-height: 297mm; background: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 20%, #dc2626 40%, #ea580c 60%, #f97316 80%, #fb923c 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #fff; position: relative; overflow: hidden; page-break-after: always; }
+  .cover::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.15) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(0,0,0,0.2) 0%, transparent 60%); }
+  .cover::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 600px; border: 1px solid rgba(255,255,255,0.08); border-radius: 50%; }
+  .cover * { position: relative; z-index: 1; }
+  .cover-brand { font-size: 14px; font-weight: 700; letter-spacing: 6px; text-transform: uppercase; opacity: 0.7; margin-bottom: 8px; }
+  .cover-title { font-size: 48px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; margin-bottom: 6px; }
+  .cover-subtitle { font-size: 16px; font-weight: 400; opacity: 0.8; letter-spacing: 1px; margin-bottom: 40px; }
+  .cover-divider { width: 60px; height: 2px; background: rgba(255,255,255,0.5); margin: 0 auto 40px; }
+  .cover-name { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 12px; }
+  .cover-meta { font-size: 14px; opacity: 0.75; line-height: 1.7; }
+  .cover-meta strong { font-weight: 600; opacity: 1; }
+  .cover-footer { position: absolute; bottom: 30px; left: 0; right: 0; font-size: 11px; opacity: 0.5; letter-spacing: 0.5px; }
+  .cover-lagna { display: inline-block; margin-top: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px 24px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; }
+
+  /* ── Header (inner pages) ── */
+  .header { background: #0f172a; color: #fff; padding: 10px 0; }
+  .header .container { display: flex; justify-content: space-between; align-items: center; }
+  .header-left h1 { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
+  .header-left h1 span { color: #94a3b8; font-weight: 400; }
+  .header-right { text-align: right; font-size: 11px; color: #94a3b8; }
+  .header-right strong { color: #fff; }
+
+  /* ── Info grid ── */
+  .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; background: #f8fafc; border-radius: 6px; margin: 8px 0 10px; border: 1px solid #e2e8f0; overflow: hidden; }
+  .info-cell { padding: 6px 10px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+  .info-cell:nth-child(3n) { border-right: none; }
+  .info-cell:nth-last-child(-n+3) { border-bottom: none; }
+  .info-cell label { display: block; font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; }
+  .info-cell p { font-size: 12px; font-weight: 600; color: #1e293b; margin-top: 1px; }
+
+  /* ── Sections ── */
+  .section-title { font-size: 13px; font-weight: 700; color: #0f172a; padding: 5px 10px; margin: 10px 0 6px; background: #f1f5f9; border-radius: 4px; border-left: 3px solid #475569; letter-spacing: -0.2px; }
+
+  /* ── Charts ── */
+  .charts { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; break-inside: avoid; }
+  .chart-box { text-align: center; flex: 1; min-width: 240px; max-width: 350px; }
+  .chart-label { font-size: 11px; font-weight: 700; margin-bottom: 2px; color: #334155; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 4px; }
+  th { background: #f1f5f9; font-weight: 700; text-align: left; padding: 4px 8px; border-bottom: 1.5px solid #cbd5e1; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; }
+  td { padding: 3px 8px; border-bottom: 1px solid #e2e8f0; color: #334155; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+
+  /* ── Current Dasha ── */
+  .current-dasha { background: #f1f5f9; border-radius: 6px; padding: 8px 12px; margin: 6px 0; display: flex; align-items: center; gap: 12px; border: 1px solid #e2e8f0; }
+  .current-dasha .label { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+  .current-dasha .value { font-size: 16px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px; }
+
+  /* ── Dasha ── */
+  .maha-header { background: #f1f5f9; padding: 5px 10px; border-radius: 4px; font-weight: 700; font-size: 11px; margin-bottom: 3px; border-left: 3px solid #475569; color: #334155; }
+
+  /* ── Yogas ── */
+  .yoga-card { padding: 6px 0; border-bottom: 1px solid #e2e8f0; }
+  .yoga-card:last-child { border-bottom: none; }
+  .yoga-header { display: flex; align-items: baseline; gap: 8px; }
+  .yoga-name { font-weight: 700; font-size: 13px; }
+  .yoga-cat { font-size: 9px; font-weight: 600; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; padding: 1px 6px; border-radius: 3px; display: inline-block; }
+  .yoga-strength { font-size: 9px; font-weight: 600; color: #64748b; margin-left: auto; }
+  .yoga-effect { font-size: 11px; font-weight: 600; color: #334155; margin-top: 2px; }
+  .yoga-detail { font-size: 11px; color: #475569; line-height: 1.5; margin-top: 3px; }
+  .yoga-planets { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+
+  .page-break { page-break-before: always; }
+  .footer { text-align: center; font-size: 9px; color: #94a3b8; margin-top: 12px; padding-top: 6px; border-top: 1px solid #e2e8f0; letter-spacing: 0.3px; }
+  @media print { .no-print { display: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ COVER PAGE ══════════════ -->
+<div class="cover">
+  <div class="cover-brand">StarYaar</div>
+  <div class="cover-title">Kundli Report</div>
+  <div class="cover-subtitle">Vedic Birth Chart Analysis</div>
+  <div class="cover-divider"></div>
+  <div class="cover-name">{name}</div>
+  <div class="cover-meta">
+    <strong>{formattedDOB}</strong> at <strong>{timeOfBirth}</strong><br>
+    {city}
+  </div>
+  <div class="cover-lagna">{chartData.lagna} Lagna ({RASHI_ENGLISH[chartData.lagna]}) &middot; {panchangData.nakshatra}{panchangData.nakshatraPada ? ` ${panchangData.nakshatraPada}` : ''}</div>
+  <div class="cover-footer">Swiss Ephemeris (Moshier) &middot; Lahiri Ayanamsa &middot; Generated {generatedDate}</div>
+</div>
+
+<!-- ══════════════ CONTENT PAGES ══════════════ -->
+<div class="header">
+  <div class="container">
+    <div class="header-left"><h1>StarYaar <span>Report</span></h1></div>
+    <div class="header-right"><strong>{name}</strong> &middot; {formattedDOB} &middot; {city}</div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="info-grid">
+  <div class="info-cell"><label>Lagna</label><p>{chartData.lagna} ({RASHI_ENGLISH[chartData.lagna]})</p></div>
+  <div class="info-cell"><label>Tithi</label><p>{panchangData.tithi}</p></div>
+  <div class="info-cell"><label>Nakshatra</label><p>{panchangData.nakshatra}{panchangData.nakshatraPada ? ` (${panchangData.nakshatraPada})` : ''}</p></div>
+  <div class="info-cell"><label>Yoga</label><p>{panchangData.yoga}</p></div>
+  <div class="info-cell"><label>Karana</label><p>{panchangData.karana}</p></div>
+  <div class="info-cell"><label>Vara</label><p>{panchangData.vara}</p></div>
+</div>
+
+<div class="section-title">Lagna Chart (D1) &amp; Navamsa Chart (D9)</div>
+<div class="charts">
+  <div class="chart-box">
+    <div class="chart-label">Lagna Chart — {chartData.lagna} ({RASHI_ENGLISH[chartData.lagna]})</div>
+    <Fragment set:html={d1Svg} />
+  </div>
+  {d9Svg && (
+    <div class="chart-box">
+      <div class="chart-label">Navamsa (D9) — {d9!.lagna} ({RASHI_ENGLISH[d9!.lagna]})</div>
+      <Fragment set:html={d9Svg} />
+    </div>
+  )}
+</div>
+
+<div class="section-title">Planetary Positions</div>
+<table>
+  <thead><tr><th>Graha</th><th>Rashi</th><th>Degree</th><th>Nakshatra</th><th>Pada</th><th>House</th></tr></thead>
+  <tbody>
+    {planetRows.map(p => (
+      <tr>
+        <td style={`font-weight:700;color:${PLANET_COLORS[p.graha]}`}>{p.graha}{p.retrograde ? ' (R)' : ''}</td>
+        <td>{p.signSanskrit}</td>
+        <td>{p.degree.toFixed(1)}°</td>
+        <td>{p.nakshatra}</td>
+        <td>{p.pada}</td>
+        <td>{p.house}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+<div class="current-dasha">
+  <div>
+    <div class="label">Currently Running Dasha</div>
+    <div class="value">{_curMaha} › {_curAntar}{_curPratyantar ? ` › ${_curPratyantar}` : ''}</div>
+  </div>
+</div>
+
+{transitResult && (
+  <div class="page-break">
+    <div class="section-title">Transit Chart (Gochar) — {transitResult.date}</div>
+    <div class="charts">
+      <div class="chart-box">
+        <div class="chart-label">Current Transit Positions</div>
+        <Fragment set:html={transitSvg} />
+      </div>
+      <div class="chart-box" style="display:flex;align-items:center">
+        <table>
+          <thead><tr><th>Graha</th><th>Transit Rashi</th><th>Deg</th><th>House</th></tr></thead>
+          <tbody>
+            {transitResult.planets.map(t => (
+              <tr>
+                <td style={`font-weight:700;color:${PLANET_COLORS[t.graha]}`}>{t.graha}{t.retrograde ? ' (R)' : ''}</td>
+                <td>{t.transitRashi}</td>
+                <td>{t.transitDegree}°</td>
+                <td>{t.natalHouse}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
+
+<div class="section-title">Yogas (Planetary Combinations) — {yogaResults.length} Found</div>
+{yogaResults.map(y => {
+  const isDosha = y.category === 'dosha';
+  const catColor = isDosha ? '#e11d48' : y.category === 'mahapurusha' ? '#d97706' : y.category === 'raja' ? '#7c3aed' : y.category === 'dhana' ? '#059669' : '#475569';
+  const strengthLabel = y.strength === 'strong' ? 'Strong' : y.strength === 'moderate' ? 'Moderate' : 'Present';
+  return (
+    <div class="yoga-card">
+      <div class="yoga-header">
+        <span class="yoga-name" style={`color:${isDosha ? '#e11d48' : '#0f172a'}`}>{y.name}</span>
+        <span class="yoga-cat" style={`background:${catColor}`}>{YOGA_CATEGORY_LABELS[y.category]}</span>
+        <span class="yoga-strength">{strengthLabel}</span>
+      </div>
+      <div class="yoga-effect">{y.effect}</div>
+      <div class="yoga-detail">{y.detail}</div>
+      <div class="yoga-planets">{y.description} &middot; {y.planets.join(', ')}{y.houses.length > 0 ? ` · Houses ${y.houses.join(', ')}` : ''}</div>
+    </div>
+  );
+})}
+
+<div class="page-break"></div>
+
+<div class="section-title">Vimshottari Maha Dasha</div>
+<table>
+  <thead><tr><th>#</th><th>Maha Dasha</th><th>Duration</th><th>Start</th><th>End</th></tr></thead>
+  <tbody>
+    {mahaTimeline.map((m, i) => (
+      <tr style={m.isCurrent ? 'background:#f1f5f9;font-weight:700' : ''}>
+        <td>{i + 1}</td>
+        <td style={`font-weight:700;color:${DASHA_COLORS[m.planet] ?? '#334155'}`}>{m.planet}{m.isCurrent ? ' ★' : ''}</td>
+        <td>{m.years}y</td>
+        <td>{m.start}</td>
+        <td>{m.end}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+<div class="section-title">Antardasha &amp; Pratyantardasha</div>
+{mahaTimeline.map(m => (
+  <div style="margin-bottom:8px">
+    <div class="maha-header" style={`border-left-color:${DASHA_COLORS[m.planet] ?? '#475569'}`}>
+      <span style={`color:${DASHA_COLORS[m.planet] ?? '#334155'}`}>{m.planet}</span> Maha Dasha ({m.years}y) &middot; {m.start} — {m.end}
+    </div>
+    <table>
+      <thead><tr><th>Antardasha</th><th>Duration</th><th>Period</th><th>Pratyantardasha</th></tr></thead>
+      <tbody>
+        {m.antars.map(a => (
+          <tr style={a.isCurrent ? 'background:#eff6ff;font-weight:600' : ''}>
+            <td style={`font-weight:600;color:${DASHA_COLORS[a.planet] ?? '#334155'}`}>{m.planet}/{a.planet}</td>
+            <td>{a.duration}</td>
+            <td>{a.start} — {a.end}</td>
+            <td style="font-size:10px;color:#64748b">{a.pratyantars}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+))}
+
+<div class="footer">StarYaar &middot; Swiss Ephemeris (Moshier) &middot; Lahiri Ayanamsa &middot; Generated {generatedDate}</div>
+</div>
+
+<div class="no-print" style="text-align:center;margin:20px;display:flex;gap:10px;justify-content:center">
+  <button onclick="window.print()" style="padding:8px 24px;font-size:13px;font-weight:700;background:#0f172a;color:#fff;border:none;border-radius:6px;cursor:pointer">
+    Print / Save as PDF
+  </button>
+  <a href="/kundli" style="display:inline-flex;align-items:center;padding:8px 24px;font-size:13px;font-weight:600;background:#fff;color:#334155;border:1px solid #e2e8f0;border-radius:6px;text-decoration:none">
+    Back to Chart
+  </a>
+</div>
+
+</body>
+</html>

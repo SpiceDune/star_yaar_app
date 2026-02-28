@@ -12,6 +12,7 @@ import { computeYogas, YOGA_CATEGORY_LABELS } from '../../lib/yoga-engine';
 import type { YogaCategory } from '../../lib/yoga-engine';
 import { computeTransits } from '../../lib/compute-transits';
 import TransitSection from '../../components/report/TransitSection';
+import DownloadPdfButton from '../../components/report/DownloadPdfButton';
 import { computeAllVargaCharts, VARGA_DEFS } from '../../lib/divisional-charts';
 import type { ChartData, Panchang as PanchangType, GrahaId, RashiId } from '../../lib/types';
 
@@ -266,6 +267,7 @@ const reportTabs = [
   { id: 'transits', label: 'Transits' },
   { id: 'divisional', label: 'Divisional Charts' },
 ];
+
 ---
 
 <ReportLayout title="Birth Chart | StarYaar" wide={true}>
@@ -278,6 +280,7 @@ const reportTabs = [
       <a href="/" class="text-stone-500 hover:text-stone-700 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-stone-100 transition-colors">
         New chart
       </a>
+      <DownloadPdfButton client:visible userName={name} />
       <a href="#" class="inline-flex items-center gap-1.5 rounded-lg bg-stone-800 hover:bg-stone-900 text-white font-semibold text-xs px-3.5 py-2 transition-colors">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
