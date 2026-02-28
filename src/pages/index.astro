@@ -1,22 +1,22 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import ReportLayout from '../layouts/ReportLayout.astro';
 import KundliForm from '../components/form/KundliForm';
 ---
-<BaseLayout title="Free Kundli Online | StarYaar – Your Indian Astrology Buddy">
-  <div class="mx-auto max-w-2xl px-4 md:px-6 py-8 md:py-12">
+<ReportLayout title="Free Kundli Online | StarYaar – Your Indian Astrology Buddy">
+  <div class="mx-auto max-w-2xl py-6 md:py-12">
     <div class="text-center mb-8 md:mb-10">
-      <h1 class="font-display text-3xl md:text-5xl text-stone-800 leading-tight">
+      <h1 class="font-display text-3xl md:text-5xl text-foreground leading-tight">
         Free Kundli Online
       </h1>
-      <p class="text-stone-600 text-sm md:text-base mt-2 md:mt-3 max-w-md mx-auto">
+      <p class="text-muted-foreground text-sm md:text-base mt-2 md:mt-3 max-w-md mx-auto">
         Get your complete Vedic birth chart with Yogas, Dasha timeline, and transit analysis
       </p>
     </div>
     <div class="w-full">
       <KundliForm client:load variant="compact" />
     </div>
-    <p class="text-center text-stone-500 text-xs mt-6">
-      <a href="/kundli" class="text-stone-700 hover:text-stone-900 font-medium underline underline-offset-4">View sample report</a>
+    <p class="text-center text-muted-foreground text-xs mt-6">
+      <a href="/kundli" class="text-foreground hover:text-primary font-medium underline underline-offset-4">View sample report</a>
     </p>
   </div>
-</BaseLayout>
+</ReportLayout>

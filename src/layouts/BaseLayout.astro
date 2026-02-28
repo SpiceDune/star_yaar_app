@@ -15,10 +15,15 @@ const { title = 'StarYaar' } = Astro.props;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script is:inline>
+      (function(){
+        var c=localStorage.getItem('color-theme');
+        if(c&&c!=='orange') document.documentElement.classList.add('theme-'+c);
+      })();
+    </script>
     <slot name="head" />
-    <!-- Global styles bundled via import in frontmatter -->
   </head>
-  <body>
+  <body class="bg-background text-foreground">
     <slot />
   </body>
 </html>

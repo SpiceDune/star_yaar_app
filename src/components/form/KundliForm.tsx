@@ -187,7 +187,7 @@ export default function KundliForm({
     <form
       onSubmit={handleSubmit}
       className={cn(
-        'w-full rounded-2xl border border-stone-200/80 bg-white shadow-lg p-4 md:p-6',
+        'w-full rounded-2xl border border-border bg-card shadow-lg p-4 md:p-6',
         variant === 'compact' && 'max-w-md md:max-w-xl lg:max-w-2xl mx-auto',
         variant === 'default' && 'max-w-2xl',
         className
@@ -353,7 +353,7 @@ export default function KundliForm({
       <Button
         type="submit"
         disabled={!isValid || loading}
-        className="mt-6 w-full h-12 rounded-lg text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white active:scale-[0.98] transition-all min-h-[44px]"
+        className="mt-6 w-full h-12 rounded-lg text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground active:scale-[0.98] transition-all min-h-[44px]"
       >
         {loading ? (
           <span className="flex items-center justify-center gap-2">

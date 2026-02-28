@@ -97,7 +97,7 @@ export default function DownloadPdfButton({ userName }: { userName?: string }) {
       <button
         onClick={() => setStage('configure')}
         disabled={stage === 'generating'}
-        className="inline-flex items-center gap-2 rounded-lg bg-slate-800 hover:bg-slate-900 disabled:opacity-50 text-white font-semibold text-xs px-4 py-2.5 transition-colors cursor-pointer"
+        className="inline-flex items-center gap-2 rounded-lg border border-border bg-card hover:bg-accent disabled:opacity-50 text-foreground font-semibold text-xs px-4 py-2.5 transition-colors cursor-pointer"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -112,17 +112,17 @@ export default function DownloadPdfButton({ userName }: { userName?: string }) {
             onClick={e => e.stopPropagation()}
           >
             {/* Header bar */}
-            <div className="bg-slate-950 px-5 py-3.5 flex items-center justify-between">
+            <div className="bg-primary px-5 py-3.5 flex items-center justify-between rounded-t-2xl">
               <div className="flex items-center gap-2.5">
                 <div className="w-6 h-6 rounded-md bg-white/15 flex items-center justify-center">
-                  <span className="text-white text-[10px] font-bold">SY</span>
+                  <span className="text-primary-foreground text-[10px] font-bold">SY</span>
                 </div>
-                <span className="text-white/90 text-sm font-semibold">
+                <span className="text-primary-foreground text-sm font-semibold">
                   {stage === 'configure' ? 'Customize Report' : 'StarYaar Report'}
                 </span>
               </div>
               {(stage === 'error' || stage === 'done' || stage === 'configure') && (
-                <button onClick={close} className="text-white/50 hover:text-white transition-colors">
+                <button onClick={close} className="text-primary-foreground/50 hover:text-primary-foreground transition-colors">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -152,7 +152,7 @@ export default function DownloadPdfButton({ userName }: { userName?: string }) {
                           checked={selected[sec.id]}
                           disabled={sec.locked}
                           onChange={() => !sec.locked && toggleSection(sec.id)}
-                          className="mt-0.5 w-4 h-4 rounded border-slate-300 text-slate-800 focus:ring-slate-500 accent-slate-800"
+                          className="mt-0.5 w-4 h-4 rounded border-border text-primary focus:ring-primary accent-primary"
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export default function DownloadPdfButton({ userName }: { userName?: string }) {
                     <span className="text-xs text-slate-400">{selectedCount} of {SECTIONS.length} sections</span>
                     <button
                       onClick={handleGenerate}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -188,7 +188,7 @@ export default function DownloadPdfButton({ userName }: { userName?: string }) {
                     <div className="relative w-16 h-16">
                       <svg className="w-16 h-16 animate-spin" viewBox="0 0 64 64">
                         <circle cx="32" cy="32" r="28" fill="none" stroke="#e2e8f0" strokeWidth="4" />
-                        <circle cx="32" cy="32" r="28" fill="none" stroke="#0f172a" strokeWidth="4" strokeLinecap="round"
+                        <circle cx="32" cy="32" r="28" fill="none" className="stroke-primary" strokeWidth="4" strokeLinecap="round"
                           strokeDasharray={`${progress * 1.76} 176`} className="transition-all duration-500" />
                       </svg>
                       <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-slate-700">
@@ -200,7 +200,7 @@ export default function DownloadPdfButton({ userName }: { userName?: string }) {
                   <p className="text-center text-xs text-slate-500 mb-3">{STEPS[step]}</p>
                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-slate-800 rounded-full transition-all duration-700 ease-out"
+                      className="h-full bg-primary rounded-full transition-all duration-700 ease-out"
                       style={{ width: `${progress}%` }}
                     />
                   </div>
@@ -231,7 +231,7 @@ export default function DownloadPdfButton({ userName }: { userName?: string }) {
                   <p className="text-sm font-semibold text-slate-800">Generation Failed</p>
                   <p className="text-xs text-red-500 mt-1 max-w-[280px] mx-auto truncate">{error}</p>
                   <div className="flex gap-2 justify-center mt-4">
-                    <button onClick={handleGenerate} className="px-4 py-2 text-xs font-semibold bg-slate-800 text-white rounded-lg hover:bg-slate-900">
+                    <button onClick={handleGenerate} className="px-4 py-2 text-xs font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">
                       Try Again
                     </button>
                     <a href="/kundli/report" target="_blank" rel="noopener noreferrer" className="px-4 py-2 text-xs font-semibold bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 no-underline">

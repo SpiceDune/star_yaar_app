@@ -1,5 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import ThemeToggle from '../components/ui/ThemeToggle';
 
 interface Props {
   title?: string;
@@ -11,25 +12,26 @@ const { title = 'Kundli Report | StarYaar', wide = false } = Astro.props;
   <Fragment slot="head">
     <title>{title}</title>
   </Fragment>
-  <header class="bg-slate-950 px-4 md:px-6 lg:px-8 py-3.5 md:py-4">
+  <header class="bg-card border-b border-border px-4 md:px-6 lg:px-8 py-3 md:py-3.5">
     <div class="max-w-6xl mx-auto flex items-center justify-between">
       <a href="/" class="flex items-center gap-2.5 no-underline group">
-        <div class="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shrink-0 group-hover:bg-white/25 transition-colors">
-          <span class="font-bold text-white text-sm tracking-tight">SY</span>
+        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0 group-hover:bg-primary/90 transition-colors">
+          <span class="font-bold text-primary-foreground text-sm tracking-tight">SY</span>
         </div>
-        <span class="font-semibold text-[15px] md:text-base text-white tracking-tight">StarYaar</span>
+        <span class="font-semibold text-[15px] md:text-base text-foreground tracking-tight">StarYaar</span>
       </a>
       <nav class="flex items-center gap-1" aria-label="Main">
-        <a href="/kundli" class="text-white bg-white/10 px-3 py-1.5 rounded-lg text-sm font-medium">Chart</a>
-        <a href="/#about" class="text-slate-400 hover:text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">About</a>
-        <a href="/#faq" class="text-slate-400 hover:text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">FAQ</a>
+        <a href="/kundli" class="text-foreground bg-accent px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors">Chart</a>
+        <a href="/#about" class="text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">About</a>
+        <a href="/#faq" class="text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">FAQ</a>
+        <ThemeToggle client:load />
       </nav>
     </div>
   </header>
   <main class={`mx-auto px-4 md:px-6 lg:px-8 py-5 md:py-8 ${wide ? 'max-w-6xl' : 'max-w-2xl'}`}>
     <slot />
   </main>
-  <footer class="border-t border-stone-100 py-5 mt-10 text-center text-[11px] text-stone-400 tracking-wide">
+  <footer class="border-t border-border py-5 mt-10 text-center text-[11px] text-muted-foreground tracking-wide">
     StarYaar &middot; Swiss Ephemeris (Moshier) &middot; Lahiri Ayanamsa
   </footer>
 </BaseLayout>

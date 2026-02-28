@@ -1,6 +1,5 @@
 ---
 import ReportLayout from '../../layouts/ReportLayout.astro';
-import KundliForm from '../../components/form/KundliForm';
 import NorthIndianChart from '../../components/charts/NorthIndianChart';
 import DashaTimeline from '../../components/report/DashaTimeline';
 import { getKundliChart } from '../../lib/db/kundli-charts';
@@ -249,39 +248,37 @@ const reportTabs = [
 
 <ReportLayout title={`${name}'s Birth Chart | StarYaar`} wide={true}>
   <!-- Status banner -->
-  <div class="bg-white border border-stone-200/80 rounded-xl px-4 md:px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 md:mb-8">
-    <p class="text-stone-700 font-medium text-sm">
-      {name}'s birth chart is ready
-    </p>
-    <div class="flex flex-wrap items-center gap-2">
-      <a href="/" class="text-stone-500 hover:text-stone-700 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-stone-100 transition-colors">
-        New chart
-      </a>
-      <ShareButton client:visible chartId={chartId} userName={name} />
-      <DownloadPdfButton client:visible userName={name} />
+  <div class="bg-card border border-border rounded-xl px-4 md:px-5 py-4 mb-6 md:mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
+        <div>
+          <p class="text-foreground font-semibold text-[15px]">{name}'s Birth Chart</p>
+          <p class="text-muted-foreground text-xs mt-0.5">{formattedDOB}{city ? ` · ${city}` : ''}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <ShareButton client:visible chartId={chartId} userName={name} />
+        <DownloadPdfButton client:visible userName={name} />
+        <a href="/kundli" class="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-xs font-semibold px-3 py-2 rounded-lg border border-border hover:bg-accent transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+          New
+        </a>
+      </div>
     </div>
   </div>
 
-  <!-- Collapsible form -->
-  <details class="mb-6 md:mb-8 group">
-    <summary class="text-sm font-semibold text-stone-500 cursor-pointer flex items-center gap-2 hover:text-stone-700 transition-colors">
-      <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-      Generate another Kundli
-    </summary>
-    <div class="mt-4">
-      <KundliForm client:load variant="compact" />
-    </div>
-  </details>
-
   <!-- Main grid: Chart + Panchang/Dasha -->
   <section class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 md:gap-8">
-    <div class="rounded-xl border border-stone-200/80 bg-white p-5 md:p-6">
+    <div class="rounded-xl border border-border bg-card p-5 md:p-6">
       <NorthIndianChart client:visible chartData={chartData} large={true} showEnglishSigns={true} />
     </div>
 
     <div class="flex flex-col gap-5 md:gap-6">
       <!-- Panchang -->
-      <div class="rounded-xl border border-stone-200/80 bg-white p-5">
+      <div class="rounded-xl border border-border bg-card p-5">
         <h2 class="text-base font-bold text-slate-800 tracking-tight mb-4">Panchang <span class="text-slate-500 font-normal text-xs">(Five Limbs)</span></h2>
         <dl class="space-y-0">
           {[
@@ -342,18 +339,57 @@ const reportTabs = [
   </section>
 
   <!-- Section quick-jump -->
-  <nav class="sticky top-0 z-30 mt-10 mb-8 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-3 bg-white/80 backdrop-blur-lg border-b border-slate-200/60" aria-label="Report sections">
+  <nav id="section-nav" class="sticky top-0 z-30 mt-10 mb-8 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-3 bg-background/80 backdrop-blur-lg border-b border-border" aria-label="Report sections">
     <div class="flex flex-wrap gap-2 md:flex-nowrap">
-      {reportTabs.map((tab) => (
-        <a
-          href={`#${tab.id}`}
-          class="px-4 py-2 rounded-full text-[13px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-800 hover:text-white transition-all duration-200"
+      {reportTabs.map((tab, i) => (
+        <button
+          type="button"
+          data-section-pill={tab.id}
+          class={`section-pill px-4 py-2 rounded-full text-[13px] font-semibold transition-all duration-200 ${i === 0 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-primary/80 hover:text-primary-foreground'}`}
         >
           {tab.label}
-        </a>
+        </button>
       ))}
     </div>
   </nav>
+  <script is:inline>
+  (function() {
+    var pills = document.querySelectorAll('[data-section-pill]');
+    var activeClass = 'bg-primary text-primary-foreground';
+    var inactiveClass = 'bg-secondary text-secondary-foreground hover:bg-primary/80 hover:text-primary-foreground';
+
+    function setActive(id) {
+      pills.forEach(function(p) {
+        var isActive = p.getAttribute('data-section-pill') === id;
+        activeClass.split(' ').forEach(function(c) { p.classList.toggle(c, isActive); });
+        inactiveClass.split(' ').forEach(function(c) { p.classList.toggle(c, !isActive); });
+      });
+    }
+
+    pills.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var id = btn.getAttribute('data-section-pill');
+        var el = document.getElementById(id);
+        if (el) {
+          setActive(id);
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    var sectionIds = [];
+    pills.forEach(function(p) { sectionIds.push(p.getAttribute('data-section-pill')); });
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) setActive(entry.target.id);
+      });
+    }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+    sectionIds.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+  })();
+  </script>
 
   <!-- 1. Planets (Positions) -->
   <section id="planets" class="pt-2 scroll-mt-16">
@@ -522,44 +558,72 @@ const reportTabs = [
 
   <!-- 5. Divisional Charts (Varga) -->
   <section id="divisional" class="pt-8 pb-4 scroll-mt-16">
-    <h2 class="text-lg font-bold text-slate-800 tracking-tight mb-1">Divisional Charts <span class="text-slate-500 font-normal text-sm">(Varga)</span></h2>
-    <p class="text-sm text-slate-600 mb-4">Each chart zooms into a specific life area by subdividing the zodiac — {vargaCharts.length} charts computed</p>
+    <h2 class="text-lg font-bold text-foreground tracking-tight mb-1">Divisional Charts <span class="text-muted-foreground font-normal text-sm">(Varga)</span></h2>
+    <p class="text-sm text-muted-foreground mb-4">Each chart zooms into a specific life area by subdividing the zodiac — {vargaCharts.length} charts computed</p>
 
     <!-- Sticky pills for divisional chart navigation -->
-    <div class="sticky top-12 z-20 -mx-4 md:-mx-6 px-4 md:px-6 py-2.5 bg-white/90 backdrop-blur-lg border-b border-slate-200/60 mb-5">
+    <div class="sticky top-[52px] z-20 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-2.5 bg-background/90 backdrop-blur-lg border-b border-border mb-5">
       <div class="flex flex-wrap gap-1.5">
         {vargaCharts.map(vc => {
-          const isD9 = vc.def.division === 9;
           const shortPurpose = vc.def.purpose.split('&')[0].split(',')[0].trim();
           return (
-            <a href={`#varga-${vc.def.id}`}
-              class={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${isD9 ? 'bg-blue-100 text-blue-700 hover:bg-blue-700 hover:text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white'}`}>
+            <button
+              type="button"
+              data-varga-pill={vc.def.id}
+              class="varga-pill px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 bg-secondary text-secondary-foreground hover:bg-primary/80 hover:text-primary-foreground">
               {vc.def.id} <span class="font-medium ml-0.5">{shortPurpose}</span>
-            </a>
+            </button>
           );
         })}
       </div>
     </div>
+    <script is:inline>
+    (function() {
+      var pills = document.querySelectorAll('[data-varga-pill]');
+      var activeClass = 'bg-primary text-primary-foreground';
+      var inactiveClass = 'bg-secondary text-secondary-foreground hover:bg-primary/80 hover:text-primary-foreground';
+
+      function setVargaActive(id) {
+        pills.forEach(function(p) {
+          var isActive = p.getAttribute('data-varga-pill') === id;
+          activeClass.split(' ').forEach(function(c) { p.classList.toggle(c, isActive); });
+          inactiveClass.split(' ').forEach(function(c) { p.classList.toggle(c, !isActive); });
+        });
+      }
+
+      pills.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = btn.getAttribute('data-varga-pill');
+          var el = document.getElementById('varga-' + id);
+          if (!el) return;
+          setVargaActive(id);
+          if (!el.open) el.open = true;
+          setTimeout(function() {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 50);
+        });
+      });
+    })();
+    </script>
 
     <div class="space-y-4">
       {vargaCharts.map(vc => {
-        const isD9 = vc.def.division === 9;
         const vcChartData = vargaToChartData(vc);
         return (
-        <details id={`varga-${vc.def.id}`} class={`rounded-xl border overflow-hidden scroll-mt-28 group ${isD9 ? 'border-blue-200/80' : 'border-slate-200/80'}`}>
-          <summary class={`px-5 py-5 cursor-pointer select-none list-none flex items-start gap-3 ${isD9 ? 'bg-blue-50/40' : 'bg-white'}`}>
+        <details id={`varga-${vc.def.id}`} class="rounded-xl border border-border overflow-hidden scroll-mt-[120px] group">
+          <summary class="px-5 py-5 cursor-pointer select-none list-none flex items-start gap-3 bg-card">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2.5 flex-wrap">
-                <span class={`text-sm font-bold px-2.5 py-1 rounded-lg ${isD9 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>{vc.def.id}</span>
-                <span class={`text-lg font-bold tracking-tight ${isD9 ? 'text-blue-800' : 'text-slate-900'}`}>{vc.def.purpose}</span>
+                <span class="text-sm font-bold px-2.5 py-1 rounded-lg bg-secondary text-secondary-foreground">{vc.def.id}</span>
+                <span class="text-lg font-bold tracking-tight text-foreground">{vc.def.purpose}</span>
               </div>
-              <p class="text-sm text-slate-500 mt-1">{vc.def.name} {vc.def.sanskrit} · Lagna {RASHI_ENGLISH[vc.lagna] ?? vc.lagna}</p>
-              <p class="text-[15px] text-slate-600 mt-2 leading-relaxed">{vc.def.description}</p>
+              <p class="text-sm text-muted-foreground mt-1">{vc.def.name} {vc.def.sanskrit} · Lagna {RASHI_ENGLISH[vc.lagna] ?? vc.lagna}</p>
+              <p class="text-[15px] text-muted-foreground mt-2 leading-relaxed">{vc.def.description}</p>
             </div>
-            <svg class="w-5 h-5 text-slate-400 shrink-0 mt-1.5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            <svg class="w-5 h-5 text-muted-foreground shrink-0 mt-1.5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
           </summary>
 
-          <div class="border-t border-slate-100 bg-white">
+          <div class="border-t border-border bg-card">
             <!-- Diamond chart -->
             <div class="px-5 py-4">
               <div class="mx-auto max-w-md">
@@ -570,28 +634,28 @@ const reportTabs = [
             <!-- Planet positions -->
             <div class="px-5 pb-5">
               <!-- Desktop table -->
-              <div class="hidden md:block rounded-xl border border-slate-200/80 overflow-hidden">
+              <div class="hidden md:block rounded-xl border border-border overflow-hidden">
                 <table class="w-full text-sm">
                   <thead>
-                    <tr class="bg-slate-50 border-b border-slate-200/80">
-                      <th class="text-left px-5 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Planet</th>
-                      <th class="text-left px-5 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Sign</th>
-                      <th class="text-center px-5 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Degree</th>
-                      <th class="text-center px-5 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">House</th>
+                    <tr class="bg-secondary border-b border-border">
+                      <th class="text-left px-5 py-2.5 text-xs font-bold text-muted-foreground uppercase tracking-wider">Planet</th>
+                      <th class="text-left px-5 py-2.5 text-xs font-bold text-muted-foreground uppercase tracking-wider">Sign</th>
+                      <th class="text-center px-5 py-2.5 text-xs font-bold text-muted-foreground uppercase tracking-wider">Degree</th>
+                      <th class="text-center px-5 py-2.5 text-xs font-bold text-muted-foreground uppercase tracking-wider">House</th>
                     </tr>
                   </thead>
                   <tbody>
                     {vc.planets.sort((a, b) => PLANET_ORDER.indexOf(a.graha) - PLANET_ORDER.indexOf(b.graha)).map((p, i) => (
-                      <tr class={i < vc.planets.length - 1 ? 'border-b border-slate-100' : ''}>
+                      <tr class={i < vc.planets.length - 1 ? 'border-b border-border/50' : ''}>
                         <td class="px-5 py-2.5">
                           <span class="font-bold inline-flex items-center gap-1.5" style={`color:${DASHA_COLORS[p.graha] ?? '#334155'}`}>
                             <span set:html={planetIconSvg(p.graha, 16)} />{p.graha}
                             {p.retrograde && <span class="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">R</span>}
                           </span>
                         </td>
-                        <td class="px-5 py-2.5 font-semibold text-slate-700">{RASHI_ENGLISH[p.rashi] ?? p.rashi}</td>
-                        <td class="px-5 py-2.5 text-center font-mono font-semibold text-slate-700">{String(p.degree).padStart(2, '0')}°</td>
-                        <td class="px-5 py-2.5 text-center font-bold text-slate-600">{p.house}</td>
+                        <td class="px-5 py-2.5 font-semibold text-foreground">{RASHI_ENGLISH[p.rashi] ?? p.rashi}</td>
+                        <td class="px-5 py-2.5 text-center font-mono font-semibold text-foreground">{String(p.degree).padStart(2, '0')}°</td>
+                        <td class="px-5 py-2.5 text-center font-bold text-muted-foreground">{p.house}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -600,12 +664,12 @@ const reportTabs = [
               <!-- Mobile grid -->
               <div class="md:hidden grid grid-cols-3 gap-2">
                 {vc.planets.sort((a, b) => PLANET_ORDER.indexOf(a.graha) - PLANET_ORDER.indexOf(b.graha)).map(p => (
-                  <div class="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5 text-center">
+                  <div class="rounded-lg bg-secondary border border-border px-3 py-2.5 text-center">
                     <p class="text-xs font-bold inline-flex items-center justify-center gap-1" style={`color:${DASHA_COLORS[p.graha] ?? '#334155'}`}>
                       <span set:html={planetIconSvg(p.graha, 13)} />{p.graha}{p.retrograde ? <span class="text-red-500 ml-0.5">R</span> : ''}
                     </p>
-                    <p class="text-xs text-slate-600 font-semibold mt-0.5">{RASHI_ENGLISH[p.rashi] ?? p.rashi}</p>
-                    <p class="text-[11px] text-slate-500 font-medium">H{p.house} · {p.degree}°</p>
+                    <p class="text-xs text-muted-foreground font-semibold mt-0.5">{RASHI_ENGLISH[p.rashi] ?? p.rashi}</p>
+                    <p class="text-[11px] text-muted-foreground font-medium">H{p.house} · {p.degree}°</p>
                   </div>
                 ))}
               </div>
@@ -616,4 +680,17 @@ const reportTabs = [
       })}
     </div>
   </section>
+
+  <!-- Bottom actions -->
+  <div class="mt-12 mb-4 rounded-xl border border-border bg-card px-5 py-6 text-center">
+    <p class="text-card-foreground font-semibold text-base mb-1">That's your complete Vedic birth chart</p>
+    <p class="text-muted-foreground text-sm mb-5">Share it with someone or save a PDF copy for your records</p>
+    <div class="flex flex-wrap items-center justify-center gap-3">
+      <ShareButton client:visible chartId={chartId} userName={name} />
+      <DownloadPdfButton client:visible userName={name} />
+      <a href="/kundli" class="text-muted-foreground hover:text-foreground text-sm font-semibold px-4 py-2 rounded-lg hover:bg-accent transition-colors">
+        Generate New Chart
+      </a>
+    </div>
+  </div>
 </ReportLayout>
