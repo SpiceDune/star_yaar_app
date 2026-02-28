@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 
 const COLOR_THEMES = [
-  { id: 'orange', label: 'Orange', swatch: 'hsl(24.6 95% 53.1%)' },
   { id: 'yellow', label: 'Yellow', swatch: 'hsl(47.9 95.8% 53.1%)' },
+  { id: 'orange', label: 'Orange', swatch: 'hsl(24.6 95% 53.1%)' },
 ] as const;
 
 type ColorTheme = (typeof COLOR_THEMES)[number]['id'];
 
 export default function ThemeToggle() {
-  const [colorTheme, setColorTheme] = useState<ColorTheme>('orange');
+  const [colorTheme, setColorTheme] = useState<ColorTheme>('yellow');
 
   useEffect(() => {
     const storedColor = localStorage.getItem('color-theme') as ColorTheme | null;
@@ -21,7 +21,7 @@ export default function ThemeToggle() {
   function applyColorTheme(id: ColorTheme) {
     const el = document.documentElement;
     COLOR_THEMES.forEach(t => el.classList.remove(`theme-${t.id}`));
-    if (id !== 'orange') el.classList.add(`theme-${id}`);
+    if (id !== 'yellow') el.classList.add(`theme-${id}`);
   }
 
   function cycleColor() {
