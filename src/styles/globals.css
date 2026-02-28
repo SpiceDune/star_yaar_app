@@ -44,12 +44,15 @@
 
 @layer base {
   body {
-    @apply font-sans text-stone-800 bg-white text-sm md:text-[15px] antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply text-sm md:text-[15px] antialiased bg-background text-foreground;
     -webkit-tap-highlight-color: transparent;
-    @apply bg-background text-foreground;
   }
   * {
     @apply border-border outline-ring/50;
+  }
+  input, button, select, textarea {
+    font-family: inherit;
   }
 }
 
