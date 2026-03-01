@@ -1,7 +1,6 @@
 ---
 import ReportLayout from '../layouts/ReportLayout.astro';
 import FaqSection from '../components/faq/FaqSection';
-import ContactForm from '../components/contact/ContactForm';
 import { faqs } from '../data/faqs';
 
 const seoTitle = 'FAQ – Frequently Asked Questions | StarYaar';
@@ -24,10 +23,10 @@ const faqSchema = {
 <ReportLayout title={seoTitle} wide={true}>
   <Fragment slot="head">
     <meta name="description" content={seoDesc} />
-    <link rel="canonical" href="https://staryaar.com/faq" />
+    <link rel="canonical" href="https://staryaar.ai/faq" />
     <meta property="og:title" content={seoTitle} />
     <meta property="og:description" content={seoDesc} />
-    <meta property="og:url" content="https://staryaar.com/faq" />
+    <meta property="og:url" content="https://staryaar.ai/faq" />
     <meta property="og:type" content="website" />
     <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
   </Fragment>
@@ -44,14 +43,18 @@ const faqSchema = {
 
     <FaqSection client:load faqs={faqs} />
 
-    <div id="contact" class="mt-12 max-w-xl mx-auto scroll-mt-16">
-      <div class="text-center mb-5">
-        <p class="text-foreground font-semibold text-base mb-1">Still have questions?</p>
-        <p class="text-muted-foreground text-sm">
-          Reach out to us and we'll get back to you as soon as possible
-        </p>
-      </div>
-      <ContactForm client:visible />
+    <div class="mt-12 rounded-xl border border-border bg-card px-5 py-6 text-center max-w-xl mx-auto">
+      <p class="text-foreground font-semibold text-base mb-1">Still have questions?</p>
+      <p class="text-muted-foreground text-sm mb-4">
+        Reach out to us and we'll get back to you as soon as possible
+      </p>
+      <a
+        href="/contact"
+        class="inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold text-sm px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+        Contact Us
+      </a>
     </div>
   </div>
 </ReportLayout>

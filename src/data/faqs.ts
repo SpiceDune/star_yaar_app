@@ -181,12 +181,12 @@ export const faqs: FaqEntry[] = [
   {
     category: 'celebrity',
     question: 'Can a celebrity request removal of their birth chart?',
-    answer: 'Yes, absolutely. While we use only publicly available birth data, we respect the wishes of any individual who prefers not to have their chart displayed. If you are a public figure (or their authorized representative) and would like your birth chart removed from StarYaar, please use our contact form at the bottom of this page with your name and the URL of the chart page. We will remove it promptly, typically within 48 hours.',
+    answer: 'Yes, absolutely. While we use only publicly available birth data, we respect the wishes of any individual who prefers not to have their chart displayed. If you are a public figure (or their authorized representative) and would like your birth chart removed from StarYaar, please use our contact page with your name and the URL of the chart page. We will remove it promptly, typically within 48 hours.',
   },
   {
     category: 'celebrity',
     question: 'Can I suggest a celebrity to add?',
-    answer: 'We welcome suggestions! If you would like a specific public figure\'s chart added to StarYaar, use our contact form at the bottom of this page with the person\'s name and, if available, their birth date, time, and place. We will verify the data against reliable sources before publishing.',
+    answer: 'We welcome suggestions! If you would like a specific public figure\'s chart added to StarYaar, use our contact page with the person\'s name and, if available, their birth date, time, and place. We will verify the data against reliable sources before publishing.',
   },
   {
     category: 'celebrity',
@@ -203,7 +203,7 @@ export const faqs: FaqEntry[] = [
   {
     category: 'privacy',
     question: 'Can I delete my chart data?',
-    answer: 'If you would like your chart removed from our database, please use our contact form at the bottom of this page with the chart URL (the /kundli/... link). We will delete it from our servers within 48 hours.',
+    answer: 'If you would like your chart removed from our database, please use our contact page with the chart URL (the /kundli/... link). We will delete it from our servers within 48 hours.',
   },
   {
     category: 'privacy',

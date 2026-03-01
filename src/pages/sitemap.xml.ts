@@ -1,13 +1,14 @@
 import type { APIRoute } from 'astro';
 import { celebrities } from '../data/celebrities';
 
-const SITE = 'https://staryaar.com';
+const SITE = 'https://staryaar.ai';
 
 const staticPages = [
   { url: '/', priority: '1.0', changefreq: 'weekly' },
   { url: '/kundli', priority: '0.9', changefreq: 'monthly' },
   { url: '/kundli/celebrity', priority: '0.8', changefreq: 'weekly' },
   { url: '/faq', priority: '0.6', changefreq: 'monthly' },
+  { url: '/contact', priority: '0.5', changefreq: 'monthly' },
 ];
 
 export const GET: APIRoute = () => {

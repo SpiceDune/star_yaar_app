@@ -1,0 +1,35 @@
+---
+import ReportLayout from '../layouts/ReportLayout.astro';
+import ContactForm from '../components/contact/ContactForm';
+
+const seoTitle = 'Contact Us | StarYaar';
+const seoDesc = 'Get in touch with the StarYaar team. Submit celebrity chart requests, data removal requests, bug reports, or general inquiries.';
+---
+
+<ReportLayout title={seoTitle} wide={true}>
+  <Fragment slot="head">
+    <meta name="description" content={seoDesc} />
+    <link rel="canonical" href="https://staryaar.ai/contact" />
+    <meta property="og:title" content={seoTitle} />
+    <meta property="og:description" content={seoDesc} />
+    <meta property="og:url" content="https://staryaar.ai/contact" />
+    <meta property="og:type" content="website" />
+  </Fragment>
+
+  <div class="py-4 md:py-8 max-w-xl mx-auto">
+    <div class="text-center mb-8">
+      <h1 class="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
+        Contact Us
+      </h1>
+      <p class="text-muted-foreground text-sm md:text-base mt-2">
+        Have a question, suggestion, or request? We'd love to hear from you.
+      </p>
+    </div>
+
+    <ContactForm client:load />
+
+    <p class="text-center text-xs text-muted-foreground/60 mt-8">
+      Looking for answers? Check our <a href="/faq" class="underline hover:text-foreground transition-colors">FAQ</a> first.
+    </p>
+  </div>
+</ReportLayout>

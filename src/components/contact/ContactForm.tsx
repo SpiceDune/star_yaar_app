@@ -125,7 +125,7 @@ export default function ContactForm() {
           id="cf-url"
           name="page_url"
           type="url"
-          placeholder="https://staryaar.com/kundli/celebrity/..."
+          placeholder="https://staryaar.ai/kundli/celebrity/..."
           className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring/40 transition-all"
         />
       </div>
