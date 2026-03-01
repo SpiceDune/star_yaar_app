@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 interface CityOption {
   id: string | number;
@@ -23,6 +24,7 @@ export default function KundliForm({
   className?: string;
   variant?: 'default' | 'compact';
 }) {
+  const { getAccessToken } = useAuth();
   const [name, setName] = useState('');
   const [dob, setDob] = useState('');
   const [time, setTime] = useState('');
@@ -152,9 +154,13 @@ export default function KundliForm({
         if (tz) setCookie('tz', tz);
       }
 
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const token = getAccessToken();
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch('/api/kundli', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           name: name.trim(),
           dob,

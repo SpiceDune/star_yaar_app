@@ -1,0 +1,22 @@
+---
+import ReportLayout from '../layouts/ReportLayout.astro';
+import AuthPageContent from '../components/auth/AuthPageContent';
+
+const seoTitle = 'Sign In | StarYaar';
+const seoDesc = 'Sign in with Google or email to save and manage your Vedic birth charts.';
+---
+
+<ReportLayout title={seoTitle} wide={true}>
+  <Fragment slot="head">
+    <meta name="description" content={seoDesc} />
+    <link rel="canonical" href="https://staryaar.ai/auth" />
+    <meta property="og:title" content={seoTitle} />
+    <meta property="og:description" content={seoDesc} />
+    <meta property="og:url" content="https://staryaar.ai/auth" />
+    <meta property="og:type" content="website" />
+  </Fragment>
+
+  <div class="py-8 md:py-16 flex justify-center">
+    <AuthPageContent client:load />
+  </div>
+</ReportLayout>

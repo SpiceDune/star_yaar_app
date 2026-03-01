@@ -1,0 +1,20 @@
+---
+import ReportLayout from '../layouts/ReportLayout.astro';
+import Dashboard from '../components/dashboard/Dashboard';
+
+const seoTitle = 'My Charts | StarYaar';
+const seoDesc = 'View and manage your saved Vedic birth charts. Generate new Kundli from your dashboard.';
+---
+
+<ReportLayout title={seoTitle} wide={true}>
+  <Fragment slot="head">
+    <meta name="description" content={seoDesc} />
+    <link rel="canonical" href="https://staryaar.ai/dashboard" />
+    <meta property="og:title" content={seoTitle} />
+    <meta property="og:description" content={seoDesc} />
+    <meta property="og:url" content="https://staryaar.ai/dashboard" />
+    <meta property="og:type" content="website" />
+  </Fragment>
+
+  <Dashboard client:load />
+</ReportLayout>

@@ -1,6 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
-import ThemeToggle from '../components/ui/ThemeToggle';
+import ReportLayoutClient from '../components/layout/ReportLayoutClient';
 
 interface Props {
   title?: string;
@@ -12,83 +12,7 @@ const { title = 'Kundli Report | StarYaar', wide = false } = Astro.props;
   <Fragment slot="head">
     <title>{title}</title>
   </Fragment>
-  <header class="bg-card border-b border-border px-4 md:px-6 lg:px-8 py-3 md:py-3.5">
-    <div class="max-w-6xl mx-auto flex items-center justify-between">
-      <a href="/" class="flex items-center gap-2.5 no-underline group">
-        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0 group-hover:bg-primary/90 transition-colors">
-          <span class="font-bold text-primary-foreground text-sm tracking-tight">SY</span>
-        </div>
-        <span class="font-semibold text-[15px] md:text-base text-foreground tracking-tight">StarYaar</span>
-      </a>
-      <nav class="flex items-center gap-1" aria-label="Main">
-        <a href="/kundli" class="text-foreground bg-accent px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors">Chart</a>
-        <a href="/kundli/celebrity" class="text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hidden sm:inline-flex">Celebrities</a>
-        <a href="/#about" class="text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">About</a>
-        <a href="/faq" class="text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">FAQ</a>
-        <ThemeToggle client:load />
-      </nav>
-    </div>
-  </header>
-  <main class={`mx-auto px-4 md:px-6 lg:px-8 py-5 md:py-8 ${wide ? 'max-w-6xl' : 'max-w-2xl'}`}>
+  <ReportLayoutClient client:load wide={wide}>
     <slot />
-  </main>
-  <footer class="border-t border-border mt-10">
-    <div class="max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-10">
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-8">
-        <!-- Brand -->
-        <div class="col-span-2 sm:col-span-1">
-          <a href="/" class="flex items-center gap-2 no-underline mb-3">
-            <div class="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-              <span class="font-bold text-primary-foreground text-xs">SY</span>
-            </div>
-            <span class="font-semibold text-sm text-foreground">StarYaar</span>
-          </a>
-          <p class="text-xs text-muted-foreground leading-relaxed">
-            Free Vedic birth chart generator powered by Swiss Ephemeris with Lahiri Ayanamsa.
-          </p>
-        </div>
-
-        <!-- Tools -->
-        <div>
-          <h3 class="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Tools</h3>
-          <ul class="space-y-2 text-xs">
-            <li><a href="/kundli" class="text-muted-foreground hover:text-foreground transition-colors">Generate Kundli</a></li>
-            <li><a href="/kundli/celebrity" class="text-muted-foreground hover:text-foreground transition-colors">Celebrity Charts</a></li>
-            <li><a href="/kundli/sample" class="text-muted-foreground hover:text-foreground transition-colors">Sample Report</a></li>
-          </ul>
-        </div>
-
-        <!-- Learn -->
-        <div>
-          <h3 class="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Learn</h3>
-          <ul class="space-y-2 text-xs">
-            <li><a href="/faq" class="text-muted-foreground hover:text-foreground transition-colors">FAQ</a></li>
-            <li><a href="/faq#birth-chart" class="text-muted-foreground hover:text-foreground transition-colors">About Birth Charts</a></li>
-            <li><a href="/faq#yogas" class="text-muted-foreground hover:text-foreground transition-colors">Understanding Yogas</a></li>
-            <li><a href="/faq#dasha" class="text-muted-foreground hover:text-foreground transition-colors">Dasha System</a></li>
-          </ul>
-        </div>
-
-        <!-- Contact -->
-        <div>
-          <h3 class="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Contact</h3>
-          <ul class="space-y-2 text-xs">
-            <li><a href="/contact" class="text-muted-foreground hover:text-foreground transition-colors">Contact Us</a></li>
-            <li><a href="/contact" class="text-muted-foreground hover:text-foreground transition-colors">Data removal requests</a></li>
-            <li><a href="/contact" class="text-muted-foreground hover:text-foreground transition-colors">Celebrity suggestions</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="border-t border-border pt-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p class="text-[11px] text-muted-foreground">
-          &copy; {new Date().getFullYear()} StarYaar. Swiss Ephemeris (Moshier) &middot; Lahiri Ayanamsa.
-        </p>
-        <div class="flex items-center gap-4 text-[11px] text-muted-foreground">
-          <a href="/faq#privacy" class="hover:text-foreground transition-colors">Privacy</a>
-          <a href="/sitemap.xml" class="hover:text-foreground transition-colors">Sitemap</a>
-        </div>
-      </div>
-    </div>
-  </footer>
+  </ReportLayoutClient>
 </BaseLayout>

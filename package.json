@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
+    "dev:restart": "lsof -ti :4321 | xargs kill -9 2>/dev/null; lsof -ti :4322 | xargs kill -9 2>/dev/null; astro dev",
     "build": "astro build",
     "preview": "npx vercel dev",
     "astro": "astro",

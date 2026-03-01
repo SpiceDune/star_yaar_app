@@ -3,9 +3,12 @@ import { computeKundli } from '../../lib/compute-kundli';
 import { getPanchangByDate } from '../../lib/db/panchang';
 import { saveKundliChart } from '../../lib/db/kundli-charts';
 import { getCityLatLon } from '../../lib/db/cities';
+import { getUserIdFromRequest } from '../../lib/auth-server';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
+    const userId = await getUserIdFromRequest(request);
+
     const body = await request.json();
     let { name, dob, time, city, lat, lon, timezone } = body as {
       name?: string;
@@ -71,6 +74,7 @@ export const POST: APIRoute = async ({ request }) => {
       chart_data: computed.chartData,
       dasha_data: computed.dasha,
       panchang_data: panchang,
+      user_id: userId ?? undefined,
     });
 
     if (!id) {

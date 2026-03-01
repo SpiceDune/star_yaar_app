@@ -3,6 +3,7 @@ import type { ChartData, Panchang, DashaPeriod } from '../types';
 
 export interface KundliChartRow {
   id: string;
+  user_id: string | null;
   name: string;
   dob: string;
   time_of_birth: string | null;
@@ -27,6 +28,7 @@ export interface SaveKundliInput {
   chart_data: ChartData;
   dasha_data: { periods: DashaPeriod[]; flow: string };
   panchang_data?: Panchang | null;
+  user_id?: string | null;
 }
 
 /**
@@ -54,7 +56,7 @@ export async function saveKundliChart(input: SaveKundliInput): Promise<string | 
   if (existing && existing.length > 0) {
     await supabase
       .from('kundli_charts')
-      .update({ name: input.name })
+      .update({ name: input.name, ...(input.user_id !== undefined && { user_id: input.user_id }) })
       .eq('id', existing[0].id);
     return existing[0].id;
   }
@@ -72,6 +74,7 @@ export async function saveKundliChart(input: SaveKundliInput): Promise<string | 
       chart_data: input.chart_data,
       dasha_data: input.dasha_data,
       panchang_data: input.panchang_data ?? null,
+      user_id: input.user_id ?? null,
     })
     .select('id')
     .single();

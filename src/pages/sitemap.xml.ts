@@ -9,6 +9,8 @@ const staticPages = [
   { url: '/kundli/celebrity', priority: '0.8', changefreq: 'weekly' },
   { url: '/faq', priority: '0.6', changefreq: 'monthly' },
   { url: '/contact', priority: '0.5', changefreq: 'monthly' },
+  { url: '/auth', priority: '0.4', changefreq: 'monthly' },
+  { url: '/dashboard', priority: '0.4', changefreq: 'monthly' },
 ];
 
 export const GET: APIRoute = () => {

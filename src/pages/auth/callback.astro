@@ -1,0 +1,8 @@
+---
+import ReportLayout from '../../layouts/ReportLayout.astro';
+import AuthCallbackHandler from '../../components/auth/AuthCallbackHandler';
+---
+
+<ReportLayout title="Signing in... | StarYaar" wide={true}>
+  <AuthCallbackHandler client:load />
+</ReportLayout>
