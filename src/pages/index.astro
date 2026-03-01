@@ -65,17 +65,37 @@ const homeFaqSchema = {
     <script type="application/ld+json" set:html={JSON.stringify(homeFaqSchema)} />
   </Fragment>
 
+  <div id="home-loader" class="flex items-center justify-center py-24">
+    <svg class="w-7 h-7 animate-spin text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+  </div>
+
   <script>
     import { supabaseBrowser } from '../lib/supabase-browser';
     const sb = supabaseBrowser;
+    const loader = document.getElementById('home-loader');
+    const content = document.getElementById('home-content');
     if (sb) {
       sb.auth.getSession().then(({ data: { session } }) => {
-        if (session) window.location.replace('/dashboard');
+        if (session) {
+          window.location.replace('/dashboard');
+        } else {
+          loader?.remove();
+          if (content) content.style.display = '';
+        }
+      }).catch(() => {
+        loader?.remove();
+        if (content) content.style.display = '';
       });
+    } else {
+      loader?.remove();
+      if (content) content.style.display = '';
     }
   </script>
 
-  <div class="mx-auto max-w-2xl py-6 md:py-12">
+  <div id="home-content" style="display:none" class="mx-auto max-w-2xl py-6 md:py-12">
     <div class="text-center mb-8 md:mb-10">
       <h1 class="font-display text-3xl md:text-5xl text-foreground leading-tight">
         Free Kundli Online
@@ -90,7 +110,6 @@ const homeFaqSchema = {
     <p class="text-center text-muted-foreground text-xs mt-6">
       <a href="/kundli/sample" class="text-foreground hover:text-primary font-medium underline underline-offset-4">View sample report</a>
     </p>
-  </div>
 
   <!-- SEO content section -->
   <section class="mx-auto max-w-2xl mt-8 md:mt-12 mb-4">
@@ -129,4 +148,5 @@ const homeFaqSchema = {
       </div>
     </div>
   </section>
+  </div>
 </ReportLayout>
