@@ -11,6 +11,8 @@ import { computeTransits } from '../../lib/compute-transits';
 import TransitSection from '../../components/report/TransitSection';
 import DownloadPdfButton from '../../components/report/DownloadPdfButton';
 import ShareButton from '../../components/report/ShareButton';
+import SaveChartBanner from '../../components/report/SaveChartBanner';
+import ReportBreadcrumb from '../../components/report/ReportBreadcrumb';
 import { computeAllVargaCharts, VARGA_DEFS } from '../../lib/divisional-charts';
 import type { ChartData, Panchang as PanchangType, GrahaId, RashiId } from '../../lib/types';
 
@@ -31,15 +33,18 @@ function formatDOB(iso: string | undefined): string {
 
 const name = row.name;
 const dobRaw = row.dob;
-const timeOfBirth = row.time_of_birth || '10:30 AM';
+const timeOfBirth = row.time_of_birth || '';
 const city = row.city || '';
 const formattedDOB = formatDOB(dobRaw) || dobRaw;
+const lat = row.latitude;
+const lon = row.longitude;
 
 const panchangData: PanchangType = row.panchang_data ?? mockPanchang;
 const chartData: ChartData = row.chart_data;
 const dashaData = row.dasha_data;
 
 const chartId = row.id;
+const isAnonymousChart = row.user_id === null;
 
 const DASHA_COLORS: Record<string, string> = {
   Sun: '#ea580c', Moon: '#7c3aed', Mars: '#e11d48', Mercury: '#059669',
@@ -259,6 +264,10 @@ const canonicalUrl = `https://staryaar.ai/kundli/${id}`;
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:type" content="website" />
   </Fragment>
+  <ReportBreadcrumb client:load chartName={`${name}'s Chart`} />
+  <div class="mb-4">
+    <SaveChartBanner client:load chartId={chartId} isAnonymousChart={isAnonymousChart} />
+  </div>
   <!-- Status banner -->
   <div class="bg-card border border-border rounded-xl px-4 md:px-5 py-4 mb-6 md:mb-8">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -266,15 +275,20 @@ const canonicalUrl = `https://staryaar.ai/kundli/${id}`;
         <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
           <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
         </div>
-        <div>
+        <div class="min-w-0">
           <p class="text-foreground font-semibold text-[15px]">{name}'s Birth Chart</p>
-          <p class="text-muted-foreground text-xs mt-0.5">{formattedDOB}{city ? ` · ${city}` : ''}</p>
+          <p class="text-muted-foreground text-xs mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0">
+            <span>{formattedDOB}</span>
+            {timeOfBirth && <><span class="opacity-40">·</span><span>{timeOfBirth}</span></>}
+            {city && <><span class="opacity-40">·</span><span>{city}</span></>}
+            {lat != null && lon != null && <><span class="opacity-40">·</span><span class="font-mono text-[11px]">{lat.toFixed(2)}°N, {lon.toFixed(2)}°E</span></>}
+          </p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <ShareButton client:visible chartId={chartId} userName={name} />
         <DownloadPdfButton client:visible userName={name} />
-        <a href="/kundli" class="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-xs font-semibold px-3 py-2 rounded-lg border border-border hover:bg-accent transition-colors">
+        <a id="report-new-btn" href="/kundli" class="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-xs font-semibold px-3 py-2 rounded-lg border border-border hover:bg-accent transition-colors min-h-[36px]">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
           New
         </a>
@@ -284,12 +298,12 @@ const canonicalUrl = `https://staryaar.ai/kundli/${id}`;
 
   <!-- Section quick-jump -->
   <nav id="section-nav" class="sticky top-0 z-30 mb-6 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-3 bg-background/80 backdrop-blur-lg border-b border-border" aria-label="Report sections">
-    <div class="flex flex-wrap gap-2 md:flex-nowrap">
+    <div class="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
       {reportTabs.map((tab, i) => (
         <button
           type="button"
           data-section-pill={tab.id}
-          class={`section-pill px-4 py-2 rounded-full text-[13px] font-semibold transition-all duration-200 ${i === 0 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-primary/80 hover:text-primary-foreground'}`}
+          class={`section-pill shrink-0 px-4 py-2 rounded-full text-[13px] font-semibold transition-all duration-200 whitespace-nowrap min-h-[40px] ${i === 0 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-primary/80 hover:text-primary-foreground'}`}
         >
           {tab.label}
         </button>
@@ -298,40 +312,43 @@ const canonicalUrl = `https://staryaar.ai/kundli/${id}`;
   </nav>
   <script is:inline>
   (function() {
-    var pills = document.querySelectorAll('[data-section-pill]');
     var activeClass = 'bg-primary text-primary-foreground';
     var inactiveClass = 'bg-secondary text-secondary-foreground hover:bg-primary/80 hover:text-primary-foreground';
 
     function setActive(id) {
-      pills.forEach(function(p) {
+      document.querySelectorAll('[data-section-pill]').forEach(function(p) {
         var isActive = p.getAttribute('data-section-pill') === id;
         activeClass.split(' ').forEach(function(c) { p.classList.toggle(c, isActive); });
         inactiveClass.split(' ').forEach(function(c) { p.classList.toggle(c, !isActive); });
       });
     }
 
-    pills.forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var id = btn.getAttribute('data-section-pill');
-        var el = document.getElementById(id);
-        if (el) {
-          setActive(id);
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      });
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-section-pill]');
+      if (!btn) return;
+      var id = btn.getAttribute('data-section-pill');
+      var el = document.getElementById(id);
+      if (el) {
+        setActive(id);
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     });
 
-    var sectionIds = [];
-    pills.forEach(function(p) { sectionIds.push(p.getAttribute('data-section-pill')); });
+    var sectionIds = ['overview','planets','dasha','yogas','transits','divisional'];
     var observer = new IntersectionObserver(function(entries) {
       entries.forEach(function(entry) {
         if (entry.isIntersecting) setActive(entry.target.id);
       });
     }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
-    sectionIds.forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
+
+    function observeSections() {
+      sectionIds.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) observer.observe(el);
+      });
+    }
+    observeSections();
+    new MutationObserver(function() { observeSections(); }).observe(document.body, { childList: true, subtree: true });
   })();
   </script>
 
@@ -577,14 +594,14 @@ const canonicalUrl = `https://staryaar.ai/kundli/${id}`;
 
     <!-- Sticky pills for divisional chart navigation -->
     <div class="sticky top-[52px] z-20 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-2.5 bg-background/90 backdrop-blur-lg border-b border-border mb-5">
-      <div class="flex flex-wrap gap-1.5">
+      <div class="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1">
         {vargaCharts.map(vc => {
           const shortPurpose = vc.def.purpose.split('&')[0].split(',')[0].trim();
           return (
             <button
               type="button"
               data-varga-pill={vc.def.id}
-              class="varga-pill px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 bg-secondary text-secondary-foreground hover:bg-primary/80 hover:text-primary-foreground">
+              class="varga-pill shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 whitespace-nowrap min-h-[36px] bg-secondary text-secondary-foreground hover:bg-primary/80 hover:text-primary-foreground">
               {vc.def.id} <span class="font-medium ml-0.5">{shortPurpose}</span>
             </button>
           );
@@ -593,29 +610,28 @@ const canonicalUrl = `https://staryaar.ai/kundli/${id}`;
     </div>
     <script is:inline>
     (function() {
-      var pills = document.querySelectorAll('[data-varga-pill]');
       var activeClass = 'bg-primary text-primary-foreground';
       var inactiveClass = 'bg-secondary text-secondary-foreground hover:bg-primary/80 hover:text-primary-foreground';
 
       function setVargaActive(id) {
-        pills.forEach(function(p) {
+        document.querySelectorAll('[data-varga-pill]').forEach(function(p) {
           var isActive = p.getAttribute('data-varga-pill') === id;
           activeClass.split(' ').forEach(function(c) { p.classList.toggle(c, isActive); });
           inactiveClass.split(' ').forEach(function(c) { p.classList.toggle(c, !isActive); });
         });
       }
 
-      pills.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var id = btn.getAttribute('data-varga-pill');
-          var el = document.getElementById('varga-' + id);
-          if (!el) return;
-          setVargaActive(id);
-          if (!el.open) el.open = true;
-          setTimeout(function() {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 50);
-        });
+      document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-varga-pill]');
+        if (!btn) return;
+        var id = btn.getAttribute('data-varga-pill');
+        var el = document.getElementById('varga-' + id);
+        if (!el) return;
+        setVargaActive(id);
+        if (!el.open) el.open = true;
+        setTimeout(function() {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
       });
     })();
     </script>
@@ -702,9 +718,22 @@ const canonicalUrl = `https://staryaar.ai/kundli/${id}`;
     <div class="flex flex-wrap items-center justify-center gap-3">
       <ShareButton client:visible chartId={chartId} userName={name} />
       <DownloadPdfButton client:visible userName={name} />
-      <a href="/kundli" class="text-muted-foreground hover:text-foreground text-sm font-semibold px-4 py-2 rounded-lg hover:bg-accent transition-colors">
+      <a id="report-bottom-new-btn" href="/kundli" class="text-muted-foreground hover:text-foreground text-sm font-semibold px-4 py-2 rounded-lg hover:bg-accent transition-colors">
         Generate New Chart
       </a>
     </div>
   </div>
+
+  <script>
+    import { supabaseBrowser } from '../../lib/supabase-browser';
+    const sb = supabaseBrowser;
+    if (sb) {
+      sb.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          document.getElementById('report-new-btn')?.remove();
+          document.getElementById('report-bottom-new-btn')?.remove();
+        }
+      });
+    }
+  </script>
 </ReportLayout>

@@ -188,8 +188,8 @@ export default function DownloadPdfButton({ userName }: { userName?: string }) {
                     <div className="relative w-16 h-16">
                       <svg className="w-16 h-16 animate-spin" viewBox="0 0 64 64">
                         <circle cx="32" cy="32" r="28" fill="none" stroke="#e2e8f0" strokeWidth="4" />
-                        <circle cx="32" cy="32" r="28" fill="none" className="stroke-primary" strokeWidth="4" strokeLinecap="round"
-                          strokeDasharray={`${progress * 1.76} 176`} className="transition-all duration-500" />
+                        <circle cx="32" cy="32" r="28" fill="none" className="stroke-primary transition-all duration-500" strokeWidth="4" strokeLinecap="round"
+                          strokeDasharray={`${progress * 1.76} 176`} />
                       </svg>
                       <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-slate-700">
                         {progress}%

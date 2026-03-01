@@ -104,3 +104,41 @@ export async function getKundliChart(id: string): Promise<KundliChartRow | null>
   if (error || !data) return null;
   return data as KundliChartRow;
 }
+
+/** Delete a chart owned by the given user. */
+export async function deleteKundliChart(chartId: string, userId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(chartId)) return false;
+
+  const { error } = await supabase
+    .from('kundli_charts')
+    .delete()
+    .eq('id', chartId)
+    .eq('user_id', userId);
+
+  return !error;
+}
+
+/** Claim an unowned chart (user_id is null) by setting the current user as owner. */
+export async function claimKundliChart(chartId: string, userId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(chartId)) return false;
+
+  const { data: row, error: fetchError } = await supabase
+    .from('kundli_charts')
+    .select('id, user_id')
+    .eq('id', chartId)
+    .maybeSingle();
+
+  if (fetchError || !row) return false;
+  if (row.user_id != null) return false;
+
+  const { error: updateError } = await supabase
+    .from('kundli_charts')
+    .update({ user_id: userId })
+    .eq('id', chartId);
+
+  return !updateError;
+}

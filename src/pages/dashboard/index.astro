@@ -1,12 +1,12 @@
 ---
-import ReportLayout from '../layouts/ReportLayout.astro';
-import Dashboard from '../components/dashboard/Dashboard';
+import ReportLayout from '../../layouts/ReportLayout.astro';
+import DashboardHome from '../../components/dashboard/DashboardHome';
 
-const seoTitle = 'My Charts | StarYaar';
-const seoDesc = 'View and manage your saved Vedic birth charts. Generate new Kundli from your dashboard.';
+const seoTitle = 'Dashboard | StarYaar';
+const seoDesc = 'Your personalized astrology dashboard with transits, dasha periods, and daily insights.';
 ---
 
-<ReportLayout title={seoTitle} wide={true}>
+<ReportLayout title={seoTitle} wide={true} hideFooter={true}>
   <Fragment slot="head">
     <meta name="description" content={seoDesc} />
     <link rel="canonical" href="https://staryaar.ai/dashboard" />
@@ -16,5 +16,5 @@ const seoDesc = 'View and manage your saved Vedic birth charts. Generate new Kun
     <meta property="og:type" content="website" />
   </Fragment>
 
-  <Dashboard client:load />
+  <DashboardHome client:load />
 </ReportLayout>

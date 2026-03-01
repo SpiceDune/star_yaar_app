@@ -67,14 +67,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const getCallbackUrl = () => {
+    if (typeof window === 'undefined') return '';
+    const base = `${window.location.origin}/auth/callback`;
+    const next = new URLSearchParams(window.location.search).get('next');
+    return next ? `${base}?next=${encodeURIComponent(next)}` : base;
+  };
+
   const signInWithGoogle = async () => {
     const supabase = supabaseBrowser;
     if (!supabase) return;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/callback`,
-      },
+      options: { redirectTo: getCallbackUrl() },
     });
     if (error) throw error;
   };
@@ -85,9 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: new Error('Supabase not configured') };
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/callback`,
-      },
+      options: { emailRedirectTo: getCallbackUrl() },
     });
     return { error: error ?? null };
   };
@@ -97,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (supabase) await supabase.auth.signOut();
     setUser(null);
     setSession(null);
+    window.location.href = '/';
   };
 
   const getAccessToken = (): string | null => session?.access_token ?? null;

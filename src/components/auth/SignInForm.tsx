@@ -6,7 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 
-const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '';
+function getRedirectUrl(): string {
+  if (typeof window === 'undefined') return '';
+  const base = `${window.location.origin}/auth/callback`;
+  const next = new URLSearchParams(window.location.search).get('next');
+  return next ? `${base}?next=${encodeURIComponent(next)}` : base;
+}
 
 export default function SignInForm() {
   const auth = useAuth();
@@ -21,6 +26,7 @@ export default function SignInForm() {
     setError('');
     setGoogleLoading(true);
     try {
+      const redirectTo = getRedirectUrl();
       if (auth.hasProvider) {
         await auth.signInWithGoogle();
       } else {
@@ -31,7 +37,7 @@ export default function SignInForm() {
         }
         const { error: err } = await supabase.auth.signInWithOAuth({
           provider: 'google',
-          options: { redirectTo: redirectUrl },
+          options: { redirectTo },
         });
         if (err) throw err;
       }
@@ -61,7 +67,7 @@ export default function SignInForm() {
         }
         const { error: err } = await supabase.auth.signInWithOtp({
           email: trimmed,
-          options: { emailRedirectTo: redirectUrl },
+          options: { emailRedirectTo: getRedirectUrl() },
         });
         if (err) setError(err.message);
         else setEmailSent(true);

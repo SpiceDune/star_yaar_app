@@ -5,14 +5,21 @@ import ReportLayoutClient from '../components/layout/ReportLayoutClient';
 interface Props {
   title?: string;
   wide?: boolean;
+  hideFooter?: boolean;
+  hideFooterWhenLoggedIn?: boolean;
 }
-const { title = 'Kundli Report | StarYaar', wide = false } = Astro.props;
+const {
+  title = 'Kundli Report | StarYaar',
+  wide = false,
+  hideFooter = false,
+  hideFooterWhenLoggedIn = false,
+} = Astro.props;
 ---
 <BaseLayout title={title}>
   <Fragment slot="head">
     <title>{title}</title>
   </Fragment>
-  <ReportLayoutClient client:load wide={wide}>
+  <ReportLayoutClient client:load wide={wide} hideFooter={hideFooter} hideFooterWhenLoggedIn={hideFooterWhenLoggedIn}>
     <slot />
   </ReportLayoutClient>
 </BaseLayout>

@@ -20,9 +20,11 @@ interface CityOption {
 export default function KundliForm({
   className,
   variant = 'default',
+  minimal = false,
 }: {
   className?: string;
   variant?: 'default' | 'compact';
+  minimal?: boolean;
 }) {
   const { getAccessToken } = useAuth();
   const [name, setName] = useState('');
@@ -155,7 +157,14 @@ export default function KundliForm({
       }
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const token = getAccessToken();
+      let token = getAccessToken();
+      if (!token) {
+        const { supabaseBrowser: sb } = await import('@/lib/supabase-browser');
+        if (sb) {
+          const { data: { session } } = await sb.auth.getSession();
+          token = session?.access_token ?? null;
+        }
+      }
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const res = await fetch('/api/kundli', {
@@ -174,7 +183,7 @@ export default function KundliForm({
 
       if (res.ok) {
         const { id } = await res.json();
-        window.location.href = `/kundli/${id}`;
+        window.location.href = token ? `/dashboard/charts/${id}` : `/kundli/${id}`;
         return;
       }
 
@@ -189,43 +198,51 @@ export default function KundliForm({
     }
   };
 
+  const labelClass = minimal
+    ? 'text-xs font-medium text-muted-foreground'
+    : 'text-xs font-semibold text-muted-foreground uppercase tracking-wider';
+  const inputClass = minimal ? 'h-10 rounded-lg text-sm' : 'h-12 rounded-lg text-base';
+
   return (
     <form
       onSubmit={handleSubmit}
       className={cn(
-        'w-full rounded-2xl border border-border bg-card shadow-lg p-4 md:p-6',
-        variant === 'compact' && 'max-w-md md:max-w-xl lg:max-w-2xl mx-auto',
-        variant === 'default' && 'max-w-2xl',
+        'w-full',
+        minimal
+          ? 'max-w-xl space-y-0'
+          : 'rounded-2xl border border-border bg-card shadow-lg p-4 md:p-6',
+        !minimal && variant === 'compact' && 'max-w-md md:max-w-xl lg:max-w-2xl mx-auto',
+        !minimal && variant === 'default' && 'max-w-2xl',
         className
       )}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+      <div className={cn('grid grid-cols-1 md:grid-cols-2', minimal ? 'gap-4' : 'gap-4 md:gap-6')}>
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">
-            Full Name
+          <Label className={labelClass}>
+            {minimal ? 'Name' : 'Full Name'}
           </Label>
           <Input
-            placeholder="Enter your name"
+            placeholder="Enter name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="h-12 rounded-lg text-base border-stone-200 focus:border-stone-500 focus:ring-stone-500/20"
+            className={inputClass}
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">
+          <Label className={labelClass}>
             Date of Birth
           </Label>
           <Input
             type="date"
             value={dob}
             onChange={(e) => setDob(e.target.value)}
-            className="h-12 rounded-lg text-base border-stone-200 focus:border-stone-500 focus:ring-stone-500/20"
+            className={inputClass}
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">
+          <Label className={labelClass}>
             Time of Birth
           </Label>
           <Input
@@ -233,23 +250,23 @@ export default function KundliForm({
             value={time}
             onChange={(e) => setTime(e.target.value)}
             disabled={!timeKnown}
-            className="h-12 rounded-lg text-base border-stone-200 focus:border-stone-500 focus:ring-stone-500/20 disabled:opacity-60"
+            className={cn(inputClass, 'disabled:opacity-60')}
           />
           <label className="flex items-center gap-2 mt-1.5 cursor-pointer">
             <input
               type="checkbox"
               checked={!timeKnown}
               onChange={(e) => setTimeKnown(!e.target.checked)}
-              className="rounded border-stone-300 text-stone-800 focus:ring-stone-500"
+              className="rounded border-border text-primary focus:ring-primary"
             />
-            <span className="text-xs text-stone-500">I don't know my exact birth time</span>
+            <span className="text-xs text-muted-foreground">I don't know my exact birth time</span>
           </label>
         </div>
 
         <div className={cn('space-y-1.5', manualCoords && 'md:col-span-2')} ref={cityDropdownRef}>
           {!manualCoords ? (
             <>
-              <Label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">
+              <Label className={labelClass}>
                 Birth City
               </Label>
               <div className="relative">
@@ -261,21 +278,21 @@ export default function KundliForm({
                     if (!e.target.value) setCity('');
                   }}
                   onFocus={() => cityOptions.length > 0 && setCityDropdownOpen(true)}
-                  className="h-12 rounded-lg text-base border-stone-200 focus:border-stone-500 focus:ring-stone-500/20"
+                  className={inputClass}
                   autoComplete="off"
                 />
                 {cityLoading && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
                   </span>
                 )}
                 {cityDropdownOpen && cityOptions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-auto rounded-xl border border-stone-200 bg-white shadow-lg">
+                  <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-auto rounded-xl border border-border bg-card shadow-lg">
                     {cityOptions.map((opt) => (
                       <button
                         key={opt.id}
                         type="button"
-                        className="w-full text-left px-4 py-3 text-sm hover:bg-stone-50 border-b border-stone-50 last:border-0 transition-colors"
+                        className="w-full text-left px-4 py-3 text-sm hover:bg-accent border-b border-border/30 last:border-0 transition-colors min-h-[44px]"
                         onClick={() => {
                           setCity(opt.label);
                           setCityQuery(opt.label);
@@ -283,9 +300,9 @@ export default function KundliForm({
                           setCityDropdownOpen(false);
                         }}
                       >
-                        <span className="font-medium text-stone-800">{opt.name}</span>
+                        <span className="font-medium text-foreground">{opt.name}</span>
                         {(opt.state || opt.country) && (
-                          <span className="text-stone-500 ml-1">
+                          <span className="text-muted-foreground ml-1">
                             {[opt.state, opt.country].filter(Boolean).join(', ')}
                           </span>
                         )}
@@ -297,14 +314,14 @@ export default function KundliForm({
               <button
                 type="button"
                 onClick={() => setManualCoords(true)}
-                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium mt-1 transition-colors"
+                className="text-xs text-primary hover:text-primary/80 font-medium mt-1 transition-colors"
               >
                 Can't find your city? Enter coordinates manually
               </button>
             </>
           ) : (
             <>
-              <Label className="text-xs font-semibold text-stone-600 uppercase tracking-wider">
+              <Label className={labelClass}>
                 Birth Location (Coordinates)
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -315,9 +332,9 @@ export default function KundliForm({
                     placeholder="Latitude (e.g. 27.18)"
                     value={manualLat}
                     onChange={(e) => setManualLat(e.target.value)}
-                    className="h-12 rounded-lg text-base border-stone-200 focus:border-stone-500 focus:ring-stone-500/20"
+                    className={cn(inputClass, 'border-border focus:border-ring focus:ring-ring/20')}
                   />
-                  <span className="text-[10px] text-stone-400 mt-0.5 block">-90 to 90</span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 block">-90 to 90</span>
                 </div>
                 <div>
                   <Input
@@ -326,24 +343,24 @@ export default function KundliForm({
                     placeholder="Longitude (e.g. 78.02)"
                     value={manualLon}
                     onChange={(e) => setManualLon(e.target.value)}
-                    className="h-12 rounded-lg text-base border-stone-200 focus:border-stone-500 focus:ring-stone-500/20"
+                    className={cn(inputClass, 'border-border focus:border-ring focus:ring-ring/20')}
                   />
-                  <span className="text-[10px] text-stone-400 mt-0.5 block">-180 to 180</span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 block">-180 to 180</span>
                 </div>
                 <div>
                   <Input
                     placeholder="Timezone"
                     value={manualTz}
                     onChange={(e) => setManualTz(e.target.value)}
-                    className="h-12 rounded-lg text-base border-stone-200 focus:border-stone-500 focus:ring-stone-500/20"
+                    className={cn(inputClass, 'border-border focus:border-ring focus:ring-ring/20')}
                   />
-                  <span className="text-[10px] text-stone-400 mt-0.5 block">e.g. Asia/Kolkata</span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 block">e.g. Asia/Kolkata</span>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setManualCoords(false)}
-                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium mt-1 transition-colors"
+                className="text-xs text-primary hover:text-primary/80 font-medium mt-1 transition-colors"
               >
                 Search by city name instead
               </button>
@@ -353,18 +370,25 @@ export default function KundliForm({
       </div>
 
       {submitError && (
-        <p className="mt-3 text-sm text-red-600 font-medium text-center">{submitError}</p>
+        <p className="mt-3 text-sm text-destructive font-medium text-center">{submitError}</p>
       )}
 
       <Button
         type="submit"
         disabled={!isValid || loading}
-        className="mt-6 w-full h-12 rounded-lg text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground active:scale-[0.98] transition-all min-h-[44px]"
+        className={cn(
+          'rounded-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground active:scale-[0.98] transition-all',
+          minimal
+            ? 'mt-5 w-full sm:w-auto px-8 h-10 text-sm'
+            : 'mt-6 w-full h-12 text-base min-h-[44px]'
+        )}
       >
         {loading ? (
           <span className="flex items-center justify-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" /> Generating...
           </span>
+        ) : minimal ? (
+          'Generate Chart'
         ) : (
           'Generate My Kundli'
         )}
