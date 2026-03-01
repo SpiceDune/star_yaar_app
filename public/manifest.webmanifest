@@ -1,0 +1,24 @@
+{
+  "name": "StarYaar – Vedic Birth Chart",
+  "short_name": "StarYaar",
+  "description": "Generate your free Vedic birth chart (Kundli) with planetary positions, Dasha timeline, Yogas, transits, and divisional charts.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#eab308",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
