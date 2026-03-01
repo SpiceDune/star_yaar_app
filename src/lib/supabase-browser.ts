@@ -8,4 +8,11 @@ const url = (import.meta.env.PUBLIC_SUPABASE_URL as string)?.trim() ?? '';
 const key = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string)?.trim() ?? '';
 
 export const supabaseBrowser: SupabaseClient | null =
-  url && key ? createClient(url, key) : null;
+  url && key
+    ? createClient(url, key, {
+        auth: {
+          flowType: 'pkce',
+          detectSessionInUrl: true,
+        },
+      })
+    : null;

@@ -65,6 +65,16 @@ const homeFaqSchema = {
     <script type="application/ld+json" set:html={JSON.stringify(homeFaqSchema)} />
   </Fragment>
 
+  <script>
+    import { supabaseBrowser } from '../lib/supabase-browser';
+    const sb = supabaseBrowser;
+    if (sb) {
+      sb.auth.getSession().then(({ data: { session } }) => {
+        if (session) window.location.replace('/dashboard');
+      });
+    }
+  </script>
+
   <div class="mx-auto max-w-2xl py-6 md:py-12">
     <div class="text-center mb-8 md:mb-10">
       <h1 class="font-display text-3xl md:text-5xl text-foreground leading-tight">
