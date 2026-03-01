@@ -4,6 +4,38 @@ import KundliForm from '../components/form/KundliForm';
 
 const seoTitle = 'Free Kundli Online – Janam Kundali & Vedic Birth Chart | StarYaar';
 const seoDesc = 'Generate your free Kundli online instantly. Get detailed Janam Kundali with planetary positions, Vimshottari Dasha timeline, Yogas, transits, and 16 divisional charts. Accurate Vedic birth chart powered by Swiss Ephemeris.';
+
+const homeFaqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  'url': 'https://staryaar.ai/',
+  'mainEntity': [
+    {
+      '@type': 'Question',
+      'name': 'What is a Kundli (birth chart)?',
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': 'A Kundli, also known as a Janam Kundli or birth chart, is a map of the sky at the exact moment and location of your birth. It shows the positions of the Sun, Moon, and planets across the 12 houses of the zodiac. In Vedic astrology, the Kundli is the foundation for understanding personality traits, life events, career prospects, relationships, and spiritual growth.',
+      },
+    },
+    {
+      '@type': 'Question',
+      'name': 'Is StarYaar free to use?',
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': 'Yes, StarYaar is completely free. You can generate unlimited birth charts, view Dasha timelines, Yogas, Transits, and Divisional Charts, share your chart via a unique link, and download a PDF report — all at no cost.',
+      },
+    },
+    {
+      '@type': 'Question',
+      'name': 'How accurate is the birth chart?',
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': 'StarYaar uses the Swiss Ephemeris (Moshier mode) for calculations — the same engine used by professional astrology software. Planetary positions are accurate to a fraction of an arc-second. Accuracy of your chart depends on how precisely you know your birth time.',
+      },
+    },
+  ],
+};
 ---
 
 <ReportLayout title={seoTitle}>
@@ -30,6 +62,7 @@ const seoDesc = 'Generate your free Kundli online instantly. Get detailed Janam 
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "INR" },
       "publisher": { "@type": "Organization", "name": "StarYaar", "url": "https://staryaar.ai" },
     })} />
+    <script type="application/ld+json" set:html={JSON.stringify(homeFaqSchema)} />
   </Fragment>
 
   <div class="mx-auto max-w-2xl py-6 md:py-12">
@@ -55,7 +88,7 @@ const seoDesc = 'Generate your free Kundli online instantly. Get detailed Janam 
       <div>
         <h2 class="text-lg font-bold text-foreground tracking-tight mb-2">What is a Kundli?</h2>
         <p class="text-sm text-muted-foreground leading-relaxed">
-          A Kundli (also spelled Kundali orKundli) is your Vedic birth chart — a map of the sky at the exact moment you were born. It shows the positions of the Sun, Moon, and planets across the 12 zodiac signs and houses. In Jyotish (Vedic astrology), your Janam Kundali is the foundation for understanding your personality, career, relationships, health, and life events.
+          A Kundli (also spelled Kundali or Kundli) is your Vedic birth chart — a map of the sky at the exact moment you were born. It shows the positions of the Sun, Moon, and planets across the 12 zodiac signs and houses. In Jyotish (Vedic astrology), your Janam Kundali is the foundation for understanding your personality, career, relationships, health, and life events.
         </p>
       </div>
 

@@ -245,9 +245,20 @@ const reportTabs = [
   { id: 'divisional', label: 'Divisional Charts' },
 ];
 
+const seoTitle = `${name}'s Birth Chart | StarYaar`;
+const seoDesc = `View ${name}'s Vedic birth chart (Kundli) with planetary positions, Vimshottari Dasha timeline, Yogas, transits, and 16 divisional charts. Free report by StarYaar.`;
+const canonicalUrl = `https://staryaar.ai/kundli/${id}`;
 ---
 
-<ReportLayout title={`${name}'s Birth Chart | StarYaar`} wide={true}>
+<ReportLayout title={seoTitle} wide={true}>
+  <Fragment slot="head">
+    <meta name="description" content={seoDesc} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:title" content={seoTitle} />
+    <meta property="og:description" content={seoDesc} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:type" content="website" />
+  </Fragment>
   <!-- Status banner -->
   <div class="bg-card border border-border rounded-xl px-4 md:px-5 py-4 mb-6 md:mb-8">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

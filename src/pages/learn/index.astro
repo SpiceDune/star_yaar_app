@@ -1,7 +1,18 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const seoTitle = 'Learn – Vedic Astrology & Kundli | StarYaar';
+const seoDesc = 'Learn about Vedic astrology, Kundli, birth charts, Vimshottari Dasha, Yogas, and divisional charts. StarYaar learning resources.';
 ---
-<BaseLayout title="Learn | StarYaar">
+<BaseLayout title={seoTitle}>
+  <Fragment slot="head">
+    <meta name="description" content={seoDesc} />
+    <link rel="canonical" href="https://staryaar.ai/learn" />
+    <meta property="og:title" content={seoTitle} />
+    <meta property="og:description" content={seoDesc} />
+    <meta property="og:url" content="https://staryaar.ai/learn" />
+    <meta property="og:type" content="website" />
+  </Fragment>
   <div class="mx-auto max-w-2xl px-4 md:px-6 py-8">
     <h1 class="font-display text-2xl text-stone-900">Learn</h1>
     <p class="text-stone-500 mt-2">Astrology learning content (coming soon).</p>
