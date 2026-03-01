@@ -307,7 +307,7 @@ export default function DashboardHome() {
           {/* Top row: Today snapshot + Dasha */}
           <div className="grid gap-5 sm:grid-cols-2">
             {/* Today's Snapshot */}
-            <div className="rounded-xl border border-border bg-card p-5">
+            <div className="rounded-xl border border-border bg-muted/30 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Sun className="w-5 h-5 text-primary" />
                 <h2 className="text-base font-semibold text-foreground">Today&apos;s Transit</h2>
@@ -322,7 +322,7 @@ export default function DashboardHome() {
                             onClick={handleToggleNotif}
                             className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
                               notifEnabled
-                                ? 'text-primary bg-primary/10 hover:bg-primary/20'
+                                ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                             }`}
                             aria-label={notifEnabled ? 'Disable notifications' : 'Enable notifications'}
@@ -425,7 +425,7 @@ export default function DashboardHome() {
 
             {/* Current Dasha */}
             {summary.currentDasha && (
-              <div className="rounded-xl border border-border bg-card p-5">
+              <div className="rounded-xl border border-border bg-muted/30 p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <Clock className="w-5 h-5 text-primary" />
                   <h2 className="text-base font-semibold text-foreground">Current Dasha</h2>
@@ -479,7 +479,7 @@ export default function DashboardHome() {
 
           {/* Today's Panchang */}
           {todayPanchang && (
-            <div className="rounded-xl border border-border bg-card p-5">
+            <div className="rounded-xl border border-border bg-muted/30 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Calendar className="w-5 h-5 text-primary" />
                 <h2 className="text-base font-semibold text-foreground">Today&apos;s Panchang</h2>
@@ -503,7 +503,7 @@ export default function DashboardHome() {
 
           {/* Transits grid */}
           {summary.transits.length > 0 && (
-            <div className="rounded-xl border border-border bg-card p-5">
+            <div className="rounded-xl border border-border bg-muted/30 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Orbit className="w-5 h-5 text-primary" />
                 <h2 className="text-base font-semibold text-foreground">Planetary Transits</h2>
@@ -532,7 +532,7 @@ export default function DashboardHome() {
 
           {/* Birth Panchang */}
           {summary.panchang && (
-            <div className="rounded-xl border border-border bg-card p-5">
+            <div className="rounded-xl border border-border bg-muted/30 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Star className="w-5 h-5 text-primary" />
                 <h2 className="text-base font-semibold text-foreground">Birth Details</h2>
